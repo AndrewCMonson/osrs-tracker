@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  players   Player[]
+}
+
+model Player {
+  id           String           @id @default(cuid())
+  username     String           @unique
+  displayName  String?
+  accountType  String           @default("normal")
+  totalLevel   Int
+  totalXp      BigInt
+  combatLevel  Int              @default(3)
+  claimedById  String?
+  claimedBy    User?            @relation(fields: [claimedById], references: [id])
+  skills       Skill[]
+  bossKCs      BossKC[]
+  snapshots    PlayerSnapshot[]
+  milestones   Milestone[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([username])
+}
+
+model Skill {
+  id       String @id @default(cuid())
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId String
+  name     String
+  level    Int
+  xp       BigInt
+  rank     Int    @default(0)
+
+  @@unique([playerId, name])
+  @@index([playerId])
+}
+
+model BossKC {
+  id       String @id @default(cuid())
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId String
+  bossName String
+  kc       Int
+  rank     Int    @default(0)
+
+  @@unique([playerId, bossName])
+  @@index([playerId])
+}
+
+model PlayerSnapshot {
+  id          String         @id @default(cuid())
+  player      Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId    String
+  totalLevel  Int
+  totalXp     BigInt
+  combatLevel Int
+  skills      SkillSnapshot[]
+  bosses      BossSnapshot[]
+  createdAt   DateTime       @default(now())
+
+  @@index([playerId, createdAt])
+  @@index([playerId])
+}
+
+model SkillSnapshot {
+  id         String         @id @default(cuid())
+  snapshot   PlayerSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  snapshotId String
+  name       String
+  level      Int
+  xp         BigInt
+  rank       Int            @default(0)
+
+  @@index([snapshotId])
+}
+
+model BossSnapshot {
+  id         String         @id @default(cuid())
+  snapshot   PlayerSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  snapshotId String
+  bossName   String
+  kc         Int
+  rank       Int            @default(0)
+
+  @@index([snapshotId])
+}
+
+model Milestone {
+  id        String   @id @default(cuid())
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId  String
+  type      String
+  details   String
+  achieved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([playerId])
+}

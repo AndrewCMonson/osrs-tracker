@@ -1,26 +1,256 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: 12 10% 4%;
+  --foreground: 30 6% 90%;
 }
+
+/* Dark theme (default) */
+.dark {
+  --bg-primary: oklch(12.3% 0.013 58.06);
+  --bg-secondary: oklch(18% 0.012 60);
+  --bg-tertiary: oklch(22% 0.01 60);
+  --text-primary: oklch(94.5% 0.009 83.6);
+  --text-secondary: oklch(70% 0.01 60);
+  --text-muted: oklch(55% 0.01 60);
+  --border-color: oklch(28% 0.01 60);
+  --accent: oklch(70% 0.15 65);
+  color-scheme: dark;
+}
+
+/* Light theme */
+.light {
+  --bg-primary: oklch(98% 0.005 60);
+  --bg-secondary: oklch(95% 0.008 60);
+  --bg-tertiary: oklch(92% 0.01 60);
+  --text-primary: oklch(20% 0.015 60);
+  --text-secondary: oklch(40% 0.01 60);
+  --text-muted: oklch(55% 0.01 60);
+  --border-color: oklch(85% 0.01 60);
+  --accent: oklch(55% 0.18 65);
+  color-scheme: light;
+}
+
+/* Apply theme colors */
+.dark body,
+html.dark {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.light body,
+html.light {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Light theme overrides for Tailwind stone colors */
+.light .bg-stone-950 { background-color: oklch(98% 0.005 60); }
+.light .bg-stone-900 { background-color: oklch(95% 0.008 60); }
+.light .bg-stone-900\/80 { background-color: oklch(95% 0.008 60 / 0.8); }
+.light .bg-stone-900\/50 { background-color: oklch(95% 0.008 60 / 0.5); }
+.light .bg-stone-800 { background-color: oklch(92% 0.01 60); }
+.light .bg-stone-800\/50 { background-color: oklch(92% 0.01 60 / 0.5); }
+.light .bg-stone-800\/30 { background-color: oklch(92% 0.01 60 / 0.3); }
+.light .bg-stone-700 { background-color: oklch(88% 0.01 60); }
+.light .bg-stone-950\/80 { background-color: oklch(98% 0.005 60 / 0.8); }
+
+.light .text-stone-100 { color: oklch(20% 0.015 60); }
+.light .text-stone-200 { color: oklch(25% 0.012 60); }
+.light .text-stone-300 { color: oklch(30% 0.01 60); }
+.light .text-stone-400 { color: oklch(40% 0.01 60); }
+.light .text-stone-500 { color: oklch(50% 0.01 60); }
+.light .text-stone-600 { color: oklch(55% 0.01 60); }
+
+.light .border-stone-800 { border-color: oklch(88% 0.01 60); }
+.light .border-stone-700 { border-color: oklch(85% 0.01 60); }
+.light .border-stone-800\/50 { border-color: oklch(88% 0.01 60 / 0.5); }
+
+.light .divide-stone-800 > :not([hidden]) ~ :not([hidden]) { border-color: oklch(88% 0.01 60); }
+.light .divide-stone-800\/50 > :not([hidden]) ~ :not([hidden]) { border-color: oklch(88% 0.01 60 / 0.5); }
+
+.light .hover\:bg-stone-800:hover { background-color: oklch(90% 0.01 60); }
+.light .hover\:bg-stone-800\/30:hover { background-color: oklch(90% 0.01 60 / 0.3); }
+.light .hover\:bg-stone-800\/70:hover { background-color: oklch(90% 0.01 60 / 0.7); }
+
+.light .ring-stone-800 { --tw-ring-color: oklch(88% 0.01 60); }
+
+/* Light theme shadows */
+.light .shadow-amber-900\/30 { --tw-shadow-color: oklch(55% 0.15 65 / 0.15); }
+.light .shadow-lg { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05); }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: oklch(12.3% 0.013 58.06);
+  --color-foreground: oklch(94.5% 0.009 83.6);
+  --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Custom scrollbar - dark */
+.dark ::-webkit-scrollbar,
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.dark ::-webkit-scrollbar-track,
+::-webkit-scrollbar-track {
+  background: oklch(20% 0.01 60);
+}
+
+.dark ::-webkit-scrollbar-thumb,
+::-webkit-scrollbar-thumb {
+  background: oklch(35% 0.02 60);
+  border-radius: 5px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(45% 0.03 60);
+}
+
+/* Custom scrollbar - light */
+.light ::-webkit-scrollbar-track {
+  background: oklch(92% 0.01 60);
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: oklch(75% 0.02 60);
+  border-radius: 5px;
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: oklch(65% 0.03 60);
+}
+
+/* Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes slide-in-from-bottom {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-from-top {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px oklch(70% 0.15 65 / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px oklch(70% 0.15 65 / 0.5);
+  }
+}
+
+.animate-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.fade-in-0 {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.slide-in-from-bottom-2 {
+  animation: slide-in-from-bottom 0.3s ease-out forwards;
+}
+
+.slide-in-from-top-2 {
+  animation: slide-in-from-top 0.3s ease-out forwards;
+}
+
+/* Background patterns */
+.bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, oklch(25% 0.01 60 / 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(25% 0.01 60 / 0.1) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.light .bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, oklch(75% 0.01 60 / 0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(75% 0.01 60 / 0.15) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.bg-radial-gradient {
+  background: radial-gradient(
+    ellipse at center top,
+    oklch(25% 0.05 65 / 0.3) 0%,
+    transparent 60%
+  );
+}
+
+.light .bg-radial-gradient {
+  background: radial-gradient(
+    ellipse at center top,
+    oklch(70% 0.12 65 / 0.2) 0%,
+    transparent 60%
+  );
+}
+
+/* Text gradient */
+.text-gradient {
+  background: linear-gradient(135deg, oklch(80% 0.15 65) 0%, oklch(70% 0.12 45) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass effect */
+.glass {
+  background: oklch(15% 0.01 60 / 0.5);
+  backdrop-filter: blur(12px);
+  border: 1px solid oklch(30% 0.01 60 / 0.3);
+}
+
+.light .glass {
+  background: oklch(98% 0.01 60 / 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid oklch(85% 0.01 60 / 0.5);
+}
+
+/* Selection */
+::selection {
+  background: oklch(65% 0.15 65 / 0.4);
+  color: white;
+}
+
+.light ::selection {
+  background: oklch(65% 0.15 65 / 0.3);
+  color: oklch(20% 0.01 60);
+}
+
+/* Light theme gradient overrides */
+.light .from-amber-500 { --tw-gradient-from: oklch(70% 0.17 65); }
+.light .to-amber-700 { --tw-gradient-to: oklch(55% 0.16 60); }
+.light .from-stone-900 { --tw-gradient-from: oklch(95% 0.008 60); }
+.light .to-stone-800 { --tw-gradient-to: oklch(92% 0.01 60); }
+
+/* Focus outline */
+:focus-visible {
+  outline: 2px solid oklch(70% 0.15 65);
+  outline-offset: 2px;
 }
