@@ -16,6 +16,7 @@ import { getSkillIcon } from '@/lib/images';
 import { cn } from '@/lib/utils';
 import { TrendingUp, Calendar, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { TimePeriodSelector, TimePeriod } from './time-period-selector';
 
 const SKILL_DISPLAY_NAMES: Record<SkillName, string> = {
   attack: 'Attack',
@@ -98,6 +99,9 @@ export function SkillChart({ username }: SkillChartProps) {
   const [chartType, setChartType] = useState<'xp' | 'level' | 'total'>('xp');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('all');
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
 
   useEffect(() => {
     async function fetchHistory() {
@@ -105,12 +109,40 @@ export function SkillChart({ username }: SkillChartProps) {
       setError(null);
 
       try {
-        const response = await fetch(`/api/players/${encodeURIComponent(username)}/history`);
+        const params = new URLSearchParams({
+          period: timePeriod,
+        });
+        if (timePeriod === 'custom' && customStartDate && customEndDate) {
+          params.append('start', customStartDate.toISOString());
+          params.append('end', customEndDate.toISOString());
+        }
+        
+        const response = await fetch(`/api/players/${encodeURIComponent(username)}/history?${params}`);
         const data = await response.json();
 
         if (data.success) {
-          setSkillsHistory(data.data.skills || []);
-          setTotalHistory(data.data.total || []);
+          const skills = data.data.skills || [];
+          const total = data.data.total || [];
+          setSkillsHistory(skills);
+          setTotalHistory(total);
+          
+          // If no skills are selected or selected skills have no data, auto-select skills with data
+          if (skills.length > 0) {
+            const skillsWithData = skills
+              .filter((s: SkillHistoryData) => s.dataPoints.length > 0)
+              .map((s: SkillHistoryData) => s.skill)
+              .slice(0, 3); // Select first 3 skills with data
+            
+            if (skillsWithData.length > 0) {
+              // Only update if current selection has no data
+              const currentHasData = selectedSkills.some(skill => 
+                skills.find((s: SkillHistoryData) => s.skill === skill && s.dataPoints.length > 0)
+              );
+              if (!currentHasData) {
+                setSelectedSkills(skillsWithData);
+              }
+            }
+          }
         } else {
           setError(data.error || 'Failed to load history');
         }
@@ -123,7 +155,7 @@ export function SkillChart({ username }: SkillChartProps) {
     }
 
     fetchHistory();
-  }, [username]);
+  }, [username, timePeriod, customStartDate, customEndDate]);
 
   const toggleSkill = (skill: SkillName) => {
     setSelectedSkills((prev) =>
@@ -147,11 +179,15 @@ export function SkillChart({ username }: SkillChartProps) {
       }));
     }
 
-    // Get all unique dates
+    // Get all unique dates (normalize to ISO strings for comparison)
     const allDates = new Set<string>();
     selectedSkills.forEach((skill) => {
       const history = skillsHistory.find((h) => h.skill === skill);
-      history?.dataPoints.forEach((dp) => allDates.add(dp.date));
+      history?.dataPoints.forEach((dp) => {
+        // Normalize date to ISO string for consistent comparison
+        const dateStr = typeof dp.date === 'string' ? dp.date : new Date(dp.date).toISOString();
+        allDates.add(dateStr);
+      });
     });
 
     // Sort dates
@@ -171,19 +207,30 @@ export function SkillChart({ username }: SkillChartProps) {
 
       selectedSkills.forEach((skill) => {
         const history = skillsHistory.find((h) => h.skill === skill);
-        const dp = history?.dataPoints.find((p) => p.date === date);
+        // Normalize dates for comparison
+        const dp = history?.dataPoints.find((p) => {
+          const pDate = typeof p.date === 'string' ? p.date : new Date(p.date).toISOString();
+          return pDate === date;
+        });
         point[SKILL_DISPLAY_NAMES[skill]] = dp
           ? chartType === 'xp'
             ? dp.xp
             : dp.level
-          : 0;
+          : null; // Use null instead of 0 for missing data points
       });
 
       return point;
     });
   })();
 
-  const hasData = chartData.length > 1;
+  const hasData = chartData.length > 0 && (
+    chartType === 'total' 
+      ? totalHistory.length > 0
+      : selectedSkills.some(skill => {
+          const history = skillsHistory.find((h) => h.skill === skill);
+          return history && history.dataPoints.length > 0;
+        })
+  );
 
   if (loading) {
     return (
@@ -195,6 +242,18 @@ export function SkillChart({ username }: SkillChartProps) {
 
   return (
     <div className="space-y-4">
+      {/* Time Period Selector */}
+      <TimePeriodSelector
+        value={timePeriod}
+        onChange={setTimePeriod}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+        onCustomDateChange={(start, end) => {
+          setCustomStartDate(start);
+          setCustomEndDate(end);
+        }}
+      />
+
       {/* Chart Type Selector */}
       <div className="flex items-center gap-2 flex-wrap">
         <button

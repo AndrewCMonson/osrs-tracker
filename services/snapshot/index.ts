@@ -50,8 +50,10 @@ export interface SkillHistory {
 
 /**
  * Save a player snapshot to the database
+ * @param player - The player data to save
+ * @param force - If true, bypass the 1-hour cooldown (for manual saves)
  */
-export async function savePlayerSnapshot(player: Player): Promise<void> {
+export async function savePlayerSnapshot(player: Player, force: boolean = false): Promise<void> {
   if (!isDatabaseAvailable()) {
     // Database not set up yet - silently skip snapshot saving
     return;
@@ -79,41 +81,57 @@ export async function savePlayerSnapshot(player: Player): Promise<void> {
       },
     });
 
-    // Check if we should create a new snapshot (limit to one per hour)
-    const lastSnapshot = await db.playerSnapshot.findFirst({
-      where: { playerId: dbPlayer.id },
-      orderBy: { createdAt: 'desc' },
-    });
+    // Check if we should create a new snapshot (limit to one per hour, unless forced)
+    if (!force) {
+      const lastSnapshot = await db.playerSnapshot.findFirst({
+        where: { playerId: dbPlayer.id },
+        orderBy: { createdAt: 'desc' },
+      });
 
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    if (lastSnapshot && lastSnapshot.createdAt > oneHourAgo) {
-      // Don't create a new snapshot, just update the existing data
-      return;
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      if (lastSnapshot && lastSnapshot.createdAt > oneHourAgo) {
+        // Don't create a new snapshot, just update the existing data
+        return;
+      }
     }
 
-    // Create the snapshot
-    await db.playerSnapshot.create({
-      data: {
-        playerId: dbPlayer.id,
-        totalLevel: player.totalLevel,
-        totalXp: BigInt(player.totalXp),
-        combatLevel: player.combatLevel,
-        skills: {
-          create: SKILLS.map((skill) => ({
-            name: skill,
-            level: player.skills.skills[skill]?.level ?? 1,
-            xp: BigInt(player.skills.skills[skill]?.xp ?? 0),
-            rank: player.skills.skills[skill]?.rank ?? 0,
-          })),
+    // Create the snapshot with all related data in a transaction
+    await db.$transaction(async (tx) => {
+      const snapshot = await tx.playerSnapshot.create({
+        data: {
+          playerId: dbPlayer.id,
+          totalLevel: player.totalLevel,
+          totalXp: BigInt(player.totalXp),
+          combatLevel: player.combatLevel,
         },
-        bosses: {
-          create: BOSSES.filter((boss) => player.bosses[boss]?.killCount > 0).map((boss) => ({
-            bossName: boss,
-            kc: player.bosses[boss]?.killCount ?? 0,
-            rank: player.bosses[boss]?.rank ?? 0,
-          })),
-        },
-      },
+      });
+
+      // Create skill snapshots
+      await tx.skillSnapshot.createMany({
+        data: SKILLS.map((skill) => ({
+          snapshotId: snapshot.id,
+          name: skill,
+          level: player.skills.skills[skill]?.level ?? 1,
+          xp: BigInt(player.skills.skills[skill]?.xp ?? 0),
+          rank: player.skills.skills[skill]?.rank ?? 0,
+        })),
+        skipDuplicates: true,
+      });
+
+      // Create boss snapshots (only for bosses with kills)
+      const bossSnapshots = BOSSES.filter((boss) => player.bosses[boss]?.killCount > 0).map((boss) => ({
+        snapshotId: snapshot.id,
+        bossName: boss,
+        kc: player.bosses[boss]?.killCount ?? 0,
+        rank: player.bosses[boss]?.rank ?? 0,
+      }));
+
+      if (bossSnapshots.length > 0) {
+        await tx.bossSnapshot.createMany({
+          data: bossSnapshots,
+          skipDuplicates: true,
+        });
+      }
     });
 
     // Update the player's current skills and boss KCs
@@ -259,9 +277,39 @@ export async function getSkillHistory(
 }
 
 /**
+ * Get date range for time period
+ */
+function getDateRange(period: 'day' | 'week' | 'month' | 'year' | 'all' | 'custom', customStart?: Date, customEnd?: Date): { start: Date | undefined; end: Date | undefined } {
+  const now = new Date();
+  let start: Date | undefined;
+  let end: Date | undefined = now;
+
+  if (period === 'custom' && customStart && customEnd) {
+    start = customStart;
+    end = customEnd;
+  } else if (period === 'day') {
+    start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  } else if (period === 'week') {
+    start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  } else if (period === 'month') {
+    start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  } else if (period === 'year') {
+    start = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+  }
+  // 'all' doesn't set start, so it gets all data
+
+  return { start, end };
+}
+
+/**
  * Get all skills history for charts
  */
-export async function getAllSkillsHistory(username: string): Promise<SkillHistory[]> {
+export async function getAllSkillsHistory(
+  username: string,
+  period: 'day' | 'week' | 'month' | 'year' | 'all' | 'custom' = 'all',
+  customStart?: Date,
+  customEnd?: Date
+): Promise<SkillHistory[]> {
   if (!isDatabaseAvailable()) {
     return [];
   }
@@ -275,8 +323,21 @@ export async function getAllSkillsHistory(username: string): Promise<SkillHistor
       return [];
     }
 
+    const { start, end } = getDateRange(period, customStart, customEnd);
+    const whereClause: any = { playerId: player.id };
+    
+    if (start || end) {
+      whereClause.createdAt = {};
+      if (start) {
+        whereClause.createdAt.gte = start;
+      }
+      if (end) {
+        whereClause.createdAt.lte = end;
+      }
+    }
+
     const snapshots = await db.playerSnapshot.findMany({
-      where: { playerId: player.id },
+      where: whereClause,
       orderBy: { createdAt: 'asc' },
       include: {
         skills: true,
@@ -311,7 +372,10 @@ export async function getAllSkillsHistory(username: string): Promise<SkillHistor
  * Get total XP history
  */
 export async function getTotalXpHistory(
-  username: string
+  username: string,
+  period: 'day' | 'week' | 'month' | 'year' | 'all' | 'custom' = 'all',
+  customStart?: Date,
+  customEnd?: Date
 ): Promise<{ date: Date; totalXp: number; totalLevel: number }[]> {
   if (!isDatabaseAvailable()) {
     return [];
@@ -326,8 +390,21 @@ export async function getTotalXpHistory(
       return [];
     }
 
+    const { start, end } = getDateRange(period, customStart, customEnd);
+    const whereClause: any = { playerId: player.id };
+    
+    if (start || end) {
+      whereClause.createdAt = {};
+      if (start) {
+        whereClause.createdAt.gte = start;
+      }
+      if (end) {
+        whereClause.createdAt.lte = end;
+      }
+    }
+
     const snapshots = await db.playerSnapshot.findMany({
-      where: { playerId: player.id },
+      where: whereClause,
       orderBy: { createdAt: 'asc' },
       select: {
         createdAt: true,

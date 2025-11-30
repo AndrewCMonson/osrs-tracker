@@ -1,12 +1,14 @@
 'use client';
 
 import Image from 'next/image';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Player, ACCOUNT_TYPE_DISPLAY } from '@/types/player';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatRelativeTime, formatUsername } from '@/lib/utils';
 import { getAccountTypeIcon } from '@/lib/images';
-import { RefreshCw, Shield, UserCheck, Swords } from 'lucide-react';
+import { RefreshCw, Shield, UserCheck, Swords, Save } from 'lucide-react';
 
 interface PlayerHeaderProps {
   player: Player;
@@ -15,6 +17,10 @@ interface PlayerHeaderProps {
 }
 
 export function PlayerHeader({ player, onRefresh, isRefreshing }: PlayerHeaderProps) {
+  const router = useRouter();
+  const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
+  const [snapshotMessage, setSnapshotMessage] = useState<string | null>(null);
+
   const accountTypeBadgeVariant = (): 'default' | 'ironman' | 'hardcore' | 'ultimate' => {
     if (player.accountType.includes('hardcore')) return 'hardcore';
     if (player.accountType.includes('ultimate')) return 'ultimate';
@@ -23,6 +29,36 @@ export function PlayerHeader({ player, onRefresh, isRefreshing }: PlayerHeaderPr
   };
 
   const accountIcon = getAccountTypeIcon(player.accountType);
+
+  const handleSaveSnapshot = async () => {
+    setIsSavingSnapshot(true);
+    setSnapshotMessage(null);
+
+    try {
+      const response = await fetch(`/api/players/${encodeURIComponent(player.username)}/snapshot`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSnapshotMessage('Snapshot saved successfully!');
+        // Refresh the page to show updated data
+        setTimeout(() => {
+          router.refresh();
+        }, 1000);
+      } else {
+        setSnapshotMessage(data.error || 'Failed to save snapshot');
+      }
+    } catch (error) {
+      console.error('Error saving snapshot:', error);
+      setSnapshotMessage('Failed to save snapshot');
+    } finally {
+      setIsSavingSnapshot(false);
+      // Clear message after 3 seconds
+      setTimeout(() => setSnapshotMessage(null), 3000);
+    }
+  };
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-xl bg-gradient-to-br from-stone-900 to-stone-900/50 border border-stone-800">
@@ -87,19 +123,41 @@ export function PlayerHeader({ player, onRefresh, isRefreshing }: PlayerHeaderPr
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        {onRefresh && (
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={onRefresh}
-            disabled={isRefreshing}
+            onClick={handleSaveSnapshot}
+            disabled={isSavingSnapshot}
           >
-            <RefreshCw
-              className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`}
+            <Save
+              className={`h-4 w-4 mr-2 ${isSavingSnapshot ? 'animate-spin' : ''}`}
             />
-            Refresh
+            Save Snapshot
           </Button>
+          {onRefresh && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`}
+              />
+              Refresh
+            </Button>
+          )}
+        </div>
+        {snapshotMessage && (
+          <p className={`text-xs ${
+            snapshotMessage.includes('successfully') 
+              ? 'text-emerald-500' 
+              : 'text-red-500'
+          }`}>
+            {snapshotMessage}
+          </p>
         )}
         {!player.claimedBy && (
           <Button size="sm">

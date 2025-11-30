@@ -156,7 +156,7 @@ export const BOSS_DISPLAY_NAMES: Record<BossName, string> = {
 };
 
 // KC thresholds for milestones
-export const KC_THRESHOLDS = [1, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000] as const;
+export const KC_THRESHOLDS = [1, 10, 25, 50, 100, 250, 500, 1000] as const;
 
 /**
  * Get the next KC milestone for a boss

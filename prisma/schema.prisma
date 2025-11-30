@@ -84,6 +84,7 @@ model SkillSnapshot {
   xp         BigInt
   rank       Int            @default(0)
 
+  @@unique([snapshotId, name])
   @@index([snapshotId])
 }
 
@@ -95,6 +96,7 @@ model BossSnapshot {
   kc         Int
   rank       Int            @default(0)
 
+  @@unique([snapshotId, bossName])
   @@index([snapshotId])
 }
 

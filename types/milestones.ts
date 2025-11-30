@@ -75,6 +75,51 @@ export type Milestone =
   | CombatLevelMilestone
   | MaxCapeMilestone;
 
+/**
+ * Milestone categories for organization
+ */
+export type MilestoneCategory =
+  | 'skills'
+  | 'levels'
+  | 'bosses'
+  | 'combat'
+  | 'achievements';
+
+/**
+ * Get the category for a milestone
+ */
+export function getMilestoneCategory(milestone: Milestone): MilestoneCategory {
+  switch (milestone.type) {
+    case 'skill_99':
+    case 'skill_max':
+    case 'max_cape':
+      return 'skills';
+    case 'base_level':
+    case 'total_level':
+      return 'levels';
+    case 'boss_kc':
+      return 'bosses';
+    case 'combat_level':
+      return 'combat';
+    case 'quest_cape':
+    case 'achievement_diary':
+      return 'achievements';
+    default:
+      return 'achievements';
+  }
+}
+
+/**
+ * Category display names
+ */
+export const CATEGORY_DISPLAY_NAMES: Record<MilestoneCategory, string> = {
+  skills: 'Skills',
+  levels: 'Levels',
+  bosses: 'Bosses',
+  combat: 'Combat',
+  achievements: 'Achievements',
+};
+
 // Common milestone thresholds
 export const BASE_LEVEL_THRESHOLDS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 99] as const;
 export const TOTAL_LEVEL_THRESHOLDS = [

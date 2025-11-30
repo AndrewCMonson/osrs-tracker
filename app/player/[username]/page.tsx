@@ -5,7 +5,10 @@ import { SkillGrid } from '@/components/player/skill-grid';
 import { SkillTable } from '@/components/player/skill-table';
 import { SkillChart } from '@/components/player/skill-chart';
 import { BossList } from '@/components/player/boss-list';
-import { MilestoneList } from '@/components/player/milestone-card';
+import { MilestoneListEnhanced } from '@/components/player/milestone-list-enhanced';
+import { GroupedMilestonesList } from '@/components/player/grouped-milestones-list';
+import { getMilestoneAchievementDates } from '@/services/milestone/dates';
+import { db } from '@/lib/db';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatXpShort } from '@/types/skills';
@@ -43,16 +46,43 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
     notFound();
   }
 
+  // Get achievement dates from snapshots
+  let achievementDates = new Map<string, Date | null>();
+  try {
+    if (process.env.DATABASE_URL) {
+      const dbPlayer = await db.player.findUnique({
+        where: { username: profile.username.toLowerCase() },
+      });
+      if (dbPlayer) {
+        achievementDates = await getMilestoneAchievementDates(dbPlayer.id, profile.milestones);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch achievement dates:', error);
+    // Continue without dates if database lookup fails
+  }
+
   // Get nearest 99s
   const nearest99s = profile.milestones
     .filter((m) => m.type === 'skill_99' && m.status === 'in_progress')
     .sort((a, b) => b.progress - a.progress)
     .slice(0, 5);
 
-  // Get recent achievements
+  // Get recent achievements and sort by date (most recent first)
   const recentAchievements = profile.milestones
     .filter((m) => m.status === 'achieved')
-    .slice(0, 5);
+    .slice(0, 10);
+
+  const sortedRecentAchievements = [...recentAchievements].sort((a, b) => {
+    const aDate = achievementDates.get(a.id);
+    const bDate = achievementDates.get(b.id);
+    if (aDate && bDate) {
+      return bDate.getTime() - aDate.getTime(); // Most recent first
+    }
+    if (aDate) return -1;
+    if (bDate) return 1;
+    return 0;
+  });
 
   // Stats summary
   const statsCards = [
@@ -148,10 +178,12 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                 </CardHeader>
                 <CardContent>
                   {nearest99s.length > 0 ? (
-                    <MilestoneList
+                    <MilestoneListEnhanced
                       milestones={nearest99s}
                       compact
                       emptyMessage="All skills are already 99!"
+                      achievementDates={achievementDates}
+                      showCategoryFilter={false}
                     />
                   ) : (
                     <p className="text-stone-500 text-center py-4">
@@ -170,9 +202,9 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <MilestoneList
-                    milestones={recentAchievements}
-                    compact
+                  <GroupedMilestonesList
+                    milestones={sortedRecentAchievements}
+                    achievementDates={achievementDates}
                     emptyMessage="No achievements yet. Keep grinding!"
                   />
                 </CardContent>
@@ -224,7 +256,7 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <SkillTable skills={profile.skills} />
+                  <SkillTable skills={profile.skills} username={decodedUsername} />
                 </CardContent>
               </Card>
             </div>
@@ -257,11 +289,13 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <MilestoneList
+                  <MilestoneListEnhanced
                     milestones={profile.milestones.filter(
                       (m) => m.status === 'achieved'
                     )}
                     emptyMessage="No milestones achieved yet."
+                    achievementDates={achievementDates}
+                    showCategoryFilter={true}
                   />
                 </CardContent>
               </Card>
@@ -275,12 +309,13 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <MilestoneList
-                    milestones={profile.milestones
-                      .filter((m) => m.status === 'in_progress')
-                      .sort((a, b) => b.progress - a.progress)
-                      .slice(0, 20)}
+                  <MilestoneListEnhanced
+                    milestones={profile.milestones.filter(
+                      (m) => m.status === 'in_progress'
+                    )}
                     emptyMessage="All milestones achieved!"
+                    achievementDates={achievementDates}
+                    showCategoryFilter={true}
                   />
                 </CardContent>
               </Card>

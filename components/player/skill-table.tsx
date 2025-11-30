@@ -1,11 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PlayerSkills, SKILLS, SkillName, formatXp, formatXpShort, getProgressTo99 } from '@/types/skills';
 import { getSkillIcon } from '@/lib/images';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TimePeriodSelector, TimePeriod } from './time-period-selector';
 
 const SKILL_DISPLAY_NAMES: Record<SkillName, string> = {
   attack: 'Attack',
@@ -34,16 +35,74 @@ const SKILL_DISPLAY_NAMES: Record<SkillName, string> = {
   sailing: 'Sailing',
 };
 
-type SortField = 'skill' | 'level' | 'xp' | 'rank' | 'progress';
+type SortField = 'skill' | 'level' | 'xp' | 'rank' | 'progress' | 'xpGained';
 type SortDirection = 'asc' | 'desc';
 
 interface SkillTableProps {
   skills: PlayerSkills;
+  username: string;
 }
 
-export function SkillTable({ skills }: SkillTableProps) {
+interface SkillHistoryData {
+  skill: SkillName;
+  dataPoints: {
+    date: string;
+    level: number;
+    xp: number;
+    rank: number;
+  }[];
+}
+
+export function SkillTable({ skills, username }: SkillTableProps) {
   const [sortField, setSortField] = useState<SortField>('skill');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('all');
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
+  const [skillsHistory, setSkillsHistory] = useState<SkillHistoryData[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch history data when time period changes
+  useEffect(() => {
+    async function fetchHistory() {
+      // Only fetch if we have valid custom dates or it's not custom
+      if (timePeriod !== 'custom' || (customStartDate && customEndDate)) {
+        setLoading(true);
+        try {
+          const params = new URLSearchParams({
+            period: timePeriod,
+          });
+          if (timePeriod === 'custom' && customStartDate && customEndDate) {
+            params.append('start', customStartDate.toISOString());
+            params.append('end', customEndDate.toISOString());
+          }
+          
+          const response = await fetch(`/api/players/${encodeURIComponent(username)}/history?${params}`);
+          const data = await response.json();
+          
+          if (data.success) {
+            setSkillsHistory(data.data.skills || []);
+          }
+        } catch (error) {
+          console.error('Failed to fetch history:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    }
+    
+    fetchHistory();
+  }, [username, timePeriod, customStartDate, customEndDate]);
+
+  // Calculate XP gained for a skill
+  const getXpGained = (skill: SkillName): number => {
+    const history = skillsHistory.find((h) => h.skill === skill);
+    if (!history || history.dataPoints.length < 2) return 0;
+    
+    const first = history.dataPoints[0];
+    const last = history.dataPoints[history.dataPoints.length - 1];
+    return last.xp - first.xp;
+  };
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -78,6 +137,9 @@ export function SkillTable({ skills }: SkillTableProps) {
         break;
       case 'progress':
         comparison = getProgressTo99(aData.xp) - getProgressTo99(bData.xp);
+        break;
+      case 'xpGained':
+        comparison = getXpGained(a) - getXpGained(b);
         break;
     }
 
@@ -114,29 +176,53 @@ export function SkillTable({ skills }: SkillTableProps) {
   const totalLevel = SKILLS.reduce((sum, skill) => sum + Math.min(skills.skills[skill].level, 99), 0);
 
   return (
-    <div className="rounded-lg border border-stone-800 overflow-hidden">
-      {/* Header */}
-      <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-stone-900/80 border-b border-stone-800">
-        <div className="col-span-4">
-          <HeaderButton field="skill">Skill</HeaderButton>
+    <div className="space-y-4">
+      {/* Time Period Selector */}
+      <TimePeriodSelector
+        value={timePeriod}
+        onChange={setTimePeriod}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+        onCustomDateChange={(start, end) => {
+          setCustomStartDate(start);
+          setCustomEndDate(end);
+        }}
+      />
+
+      <div className="rounded-lg border border-stone-800 overflow-hidden">
+        {/* Header */}
+        <div className={cn(
+          "grid gap-2 px-4 py-3 bg-stone-900/80 border-b border-stone-800",
+          timePeriod !== 'all' ? "grid-cols-12" : "grid-cols-12"
+        )}>
+          <div className={cn(timePeriod !== 'all' ? "col-span-2" : "col-span-4")}>
+            <HeaderButton field="skill">Skill</HeaderButton>
+          </div>
+          <div className={cn(timePeriod !== 'all' ? "col-span-2" : "col-span-2", "flex justify-end")}>
+            <HeaderButton field="xp" className="justify-end">Exp.</HeaderButton>
+          </div>
+          {timePeriod !== 'all' && (
+            <div className="col-span-2 flex justify-end">
+              <HeaderButton field="xpGained" className="justify-end">Exp. Gained</HeaderButton>
+            </div>
+          )}
+          <div className="col-span-2 flex justify-end">
+            <HeaderButton field="level" className="justify-end">Level</HeaderButton>
+          </div>
+          <div className="col-span-2 flex justify-end">
+            <HeaderButton field="rank" className="justify-end">Rank</HeaderButton>
+          </div>
+          <div className="col-span-2 flex justify-end">
+            <HeaderButton field="progress" className="justify-end">Progress</HeaderButton>
+          </div>
         </div>
-        <div className="col-span-2 flex justify-end">
-          <HeaderButton field="xp" className="justify-end">Exp.</HeaderButton>
-        </div>
-        <div className="col-span-2 flex justify-end">
-          <HeaderButton field="level" className="justify-end">Level</HeaderButton>
-        </div>
-        <div className="col-span-2 flex justify-end">
-          <HeaderButton field="rank" className="justify-end">Rank</HeaderButton>
-        </div>
-        <div className="col-span-2 flex justify-end">
-          <HeaderButton field="progress" className="justify-end">Progress</HeaderButton>
-        </div>
-      </div>
 
       {/* Overall row */}
-      <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-stone-800/50 border-b border-stone-800">
-        <div className="col-span-4 flex items-center gap-2">
+      <div className={cn(
+        "grid gap-2 px-4 py-2.5 bg-stone-800/50 border-b border-stone-800",
+        "grid-cols-12"
+      )}>
+        <div className={cn(timePeriod !== 'all' ? "col-span-2" : "col-span-4", "flex items-center gap-2")}>
           <div className="w-5 h-5 rounded bg-amber-600 flex items-center justify-center">
             <span className="text-[10px] font-bold text-white">Σ</span>
           </div>
@@ -144,9 +230,19 @@ export function SkillTable({ skills }: SkillTableProps) {
         </div>
         <div className="col-span-2 text-right">
           <span className="text-sm font-medium text-emerald-400">
-            {formatXpShort(totalXp)}
+            {formatXp(totalXp)}
           </span>
         </div>
+        {timePeriod !== 'all' && (
+          <div className="col-span-2 text-right">
+            <span className="text-sm font-medium text-emerald-300">
+              {(() => {
+                const totalGained = SKILLS.reduce((sum, skill) => sum + getXpGained(skill), 0);
+                return totalGained > 0 ? `+${formatXp(totalGained)}` : formatXp(totalGained);
+              })()}
+            </span>
+          </div>
+        )}
         <div className="col-span-2 text-right">
           <span className="text-sm font-medium text-stone-200">
             {totalLevel.toLocaleString()}
@@ -177,9 +273,12 @@ export function SkillTable({ skills }: SkillTableProps) {
           return (
             <div
               key={skill}
-              className="grid grid-cols-12 gap-2 px-4 py-2 hover:bg-stone-800/30 transition-colors"
+              className={cn(
+                "grid gap-2 px-4 py-2 hover:bg-stone-800/30 transition-colors",
+                "grid-cols-12"
+              )}
             >
-              <div className="col-span-4 flex items-center gap-2">
+              <div className={cn(timePeriod !== 'all' ? "col-span-2" : "col-span-4", "flex items-center gap-2")}>
                 <Image
                   src={getSkillIcon(skill)}
                   alt={SKILL_DISPLAY_NAMES[skill]}
@@ -193,9 +292,19 @@ export function SkillTable({ skills }: SkillTableProps) {
               </div>
               <div className="col-span-2 text-right">
                 <span className="text-sm text-emerald-400">
-                  {formatXpShort(data.xp)}
+                  {formatXp(data.xp)}
                 </span>
               </div>
+              {timePeriod !== 'all' && (
+                <div className="col-span-2 text-right">
+                  <span className="text-sm text-emerald-300">
+                    {(() => {
+                      const gained = getXpGained(skill);
+                      return gained > 0 ? `+${formatXp(gained)}` : formatXp(gained);
+                    })()}
+                  </span>
+                </div>
+              )}
               <div className="col-span-2 text-right">
                 <span className={cn(
                   'text-sm font-medium',
@@ -234,6 +343,7 @@ export function SkillTable({ skills }: SkillTableProps) {
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );

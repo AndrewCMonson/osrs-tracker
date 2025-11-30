@@ -15,10 +15,16 @@ export async function GET(
   try {
     const { username } = await params;
     const normalized = normalizeUsername(username);
+    
+    // Get time period parameters from query string
+    const { searchParams } = new URL(request.url);
+    const period = (searchParams.get('period') || 'all') as 'day' | 'week' | 'month' | 'year' | 'all' | 'custom';
+    const customStart = searchParams.get('start') ? new Date(searchParams.get('start')!) : undefined;
+    const customEnd = searchParams.get('end') ? new Date(searchParams.get('end')!) : undefined;
 
     const [skillsHistory, totalHistory] = await Promise.all([
-      getAllSkillsHistory(normalized),
-      getTotalXpHistory(normalized),
+      getAllSkillsHistory(normalized, period, customStart, customEnd),
+      getTotalXpHistory(normalized, period, customStart, customEnd),
     ]);
 
     return NextResponse.json({

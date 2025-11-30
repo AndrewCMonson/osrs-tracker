@@ -6,6 +6,8 @@
  * but progress tracking features will be disabled.
  */
 
+import { PrismaClient } from '@prisma/client';
+
 /**
  * Create a mock database client that returns empty results
  */
@@ -28,31 +30,35 @@ function createMockDb() {
   });
 }
 
-let prisma: any;
-let db: any;
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
-try {
-  // Try to import PrismaClient
-  const { PrismaClient } = require('@prisma/client');
-  
-  const globalForPrisma = globalThis as unknown as {
-    prisma: any;
-  };
+let prisma: PrismaClient | ReturnType<typeof createMockDb>;
+let db: PrismaClient | ReturnType<typeof createMockDb>;
 
-  prisma =
-    globalForPrisma.prisma ??
-    new PrismaClient({
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-    });
+// Check if DATABASE_URL is set and Prisma client is available
+if (process.env.DATABASE_URL) {
+  try {
+    prisma =
+      globalForPrisma.prisma ??
+      new PrismaClient({
+        log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+      });
 
-  if (process.env.NODE_ENV !== 'production') {
-    globalForPrisma.prisma = prisma;
+    if (process.env.NODE_ENV !== 'production') {
+      globalForPrisma.prisma = prisma as PrismaClient;
+    }
+
+    db = prisma;
+  } catch (error) {
+    // Prisma client not generated yet - use mock
+    console.warn('Prisma client not generated. Run: npx prisma generate');
+    prisma = createMockDb();
+    db = prisma;
   }
-
-  db = prisma;
-} catch (error) {
-  // Prisma client not available (not generated or no DATABASE_URL)
-  // Use mock client that returns empty results
+} else {
+  // No DATABASE_URL - use mock client
   prisma = createMockDb();
   db = prisma;
 }
