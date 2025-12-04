@@ -60,26 +60,37 @@ export async function savePlayerSnapshot(player: Player, force: boolean = false)
   }
 
   try {
-    // First, ensure the player exists in the database
-    const dbPlayer = await db.player.upsert({
-      where: { username: player.username.toLowerCase() },
-      create: {
-        username: player.username.toLowerCase(),
-        displayName: player.displayName,
-        accountType: player.accountType,
-        totalLevel: player.totalLevel,
-        totalXp: BigInt(player.totalXp),
-        combatLevel: player.combatLevel,
-      },
-      update: {
-        displayName: player.displayName,
-        accountType: player.accountType,
-        totalLevel: player.totalLevel,
-        totalXp: BigInt(player.totalXp),
-        combatLevel: player.combatLevel,
-        updatedAt: new Date(),
-      },
-    });
+    // Check for name changes - find the original player ID
+    const { getPlayerIdByUsername } = await import('../name-change');
+    const playerId = await getPlayerIdByUsername(player.username.toLowerCase());
+    
+    let dbPlayer;
+    if (playerId) {
+      // Player exists (possibly with name changes), update it
+      dbPlayer = await db.player.update({
+        where: { id: playerId },
+        data: {
+          displayName: player.displayName,
+          accountType: player.accountType,
+          totalLevel: player.totalLevel,
+          totalXp: BigInt(player.totalXp),
+          combatLevel: player.combatLevel,
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      // New player, create it
+      dbPlayer = await db.player.create({
+        data: {
+          username: player.username.toLowerCase(),
+          displayName: player.displayName,
+          accountType: player.accountType,
+          totalLevel: player.totalLevel,
+          totalXp: BigInt(player.totalXp),
+          combatLevel: player.combatLevel,
+        },
+      });
+    }
 
     // Check if we should create a new snapshot (limit to one per hour, unless forced)
     if (!force) {

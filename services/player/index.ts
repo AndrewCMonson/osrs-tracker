@@ -9,6 +9,7 @@ import { fetchPlayerHiscores, getMockPlayer, shouldUseMock, OsrsPlayerData } fro
 import { calculatePlayerMilestones } from '../milestone';
 import { normalizeUsername } from '@/lib/utils';
 import { savePlayerSnapshot } from '../snapshot';
+import { getCurrentUsername } from '../name-change';
 
 /**
  * Calculate actual total level from individual skills (capped at 99 each)
@@ -32,9 +33,21 @@ export interface PlayerLookupResult {
 export async function lookupPlayer(username: string): Promise<PlayerLookupResult> {
   const normalized = normalizeUsername(username);
 
+  // Check for name changes - if this is an old username, get the current one
+  let lookupUsername = normalized;
+  try {
+    const currentUsername = await getCurrentUsername(normalized);
+    if (currentUsername && currentUsername !== normalized) {
+      lookupUsername = currentUsername;
+    }
+  } catch (error) {
+    // If name change lookup fails, continue with original username
+    console.error('Error checking name changes:', error);
+  }
+
   // Use mock data if enabled
   if (shouldUseMock()) {
-    const mockPlayer = getMockPlayer(username);
+    const mockPlayer = getMockPlayer(lookupUsername);
     if (mockPlayer) {
       return { success: true, player: mockPlayer };
     }
@@ -43,10 +56,10 @@ export async function lookupPlayer(username: string): Promise<PlayerLookupResult
   try {
     // Run all API calls in parallel for speed
     const [mainResult, hardcoreResult, ultimateResult, ironmanResult] = await Promise.allSettled([
-      fetchPlayerHiscores(normalized, 'hiscore_oldschool'),
-      fetchPlayerHiscores(normalized, 'hiscore_oldschool_hardcore_ironman'),
-      fetchPlayerHiscores(normalized, 'hiscore_oldschool_ultimate'),
-      fetchPlayerHiscores(normalized, 'hiscore_oldschool_ironman'),
+      fetchPlayerHiscores(lookupUsername, 'hiscore_oldschool'),
+      fetchPlayerHiscores(lookupUsername, 'hiscore_oldschool_hardcore_ironman'),
+      fetchPlayerHiscores(lookupUsername, 'hiscore_oldschool_ultimate'),
+      fetchPlayerHiscores(lookupUsername, 'hiscore_oldschool_ironman'),
     ]);
 
     // Main hiscores must succeed
@@ -85,9 +98,9 @@ export async function lookupPlayer(username: string): Promise<PlayerLookupResult
     const totalLevel = calculateTotalLevel(data.skills.skills);
 
     const player: Player = {
-      id: `osrs-${normalized}`,
-      username: normalized,
-      displayName: username,
+      id: `osrs-${lookupUsername}`,
+      username: lookupUsername,
+      displayName: lookupUsername, // Use the current username for display
       accountType,
       combatLevel,
       totalLevel,
@@ -120,6 +133,27 @@ export async function getPlayerProfile(username: string): Promise<PlayerProfile 
   }
 
   const player = result.player;
+  
+  // Load claimedBy status from database if available
+  let claimedBy: string | undefined;
+  let claimedAt: Date | undefined;
+  try {
+    if (process.env.DATABASE_URL) {
+      const { prisma } = await import('@/lib/db');
+      const dbPlayer = await prisma.player.findUnique({
+        where: { username: normalizeUsername(username) },
+        select: { claimedById: true, updatedAt: true },
+      });
+      if (dbPlayer?.claimedById) {
+        claimedBy = dbPlayer.claimedById;
+        claimedAt = dbPlayer.updatedAt; // Use updatedAt as claimedAt for now
+      }
+    }
+  } catch (error) {
+    // If database lookup fails, continue without claimed status
+    console.error('Failed to load claimedBy status:', error);
+  }
+
   const milestones = calculatePlayerMilestones(player);
 
   // Get recent achievements (achieved milestones)
@@ -135,6 +169,8 @@ export async function getPlayerProfile(username: string): Promise<PlayerProfile 
 
   return {
     ...player,
+    claimedBy,
+    claimedAt,
     milestones,
     recentAchievements,
     nearestGoals,

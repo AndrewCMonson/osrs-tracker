@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getPlayerProfile } from '@/services/player';
 import { PlayerHeader } from '@/components/player/player-header';
 import { SkillGrid } from '@/components/player/skill-grid';
+import { SkillGridInGame } from '@/components/player/skill-grid-in-game';
 import { SkillTable } from '@/components/player/skill-table';
 import { SkillChart } from '@/components/player/skill-chart';
 import { BossList } from '@/components/player/boss-list';
@@ -12,6 +13,7 @@ import { db } from '@/lib/db';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatXpShort } from '@/types/skills';
+import { NameChangeHistory } from '@/components/player/name-change-history';
 import {
   BarChart3,
   Skull,
@@ -50,11 +52,10 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
   let achievementDates = new Map<string, Date | null>();
   try {
     if (process.env.DATABASE_URL) {
-      const dbPlayer = await db.player.findUnique({
-        where: { username: profile.username.toLowerCase() },
-      });
-      if (dbPlayer) {
-        achievementDates = await getMilestoneAchievementDates(dbPlayer.id, profile.milestones);
+      const { getPlayerIdByUsername } = await import('@/services/name-change');
+      const playerId = await getPlayerIdByUsername(profile.username.toLowerCase());
+      if (playerId) {
+        achievementDates = await getMilestoneAchievementDates(playerId, profile.milestones);
       }
     }
   } catch (error) {
@@ -164,7 +165,7 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <SkillGrid skills={profile.skills} compact />
+                  <SkillGridInGame skills={profile.skills} />
                 </CardContent>
               </Card>
 
@@ -228,6 +229,9 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                   />
                 </CardContent>
               </Card>
+
+              {/* Name Change History */}
+              <NameChangeHistory username={profile.username} />
             </div>
           </TabsContent>
 

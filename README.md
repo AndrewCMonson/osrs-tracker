@@ -1,112 +1,66 @@
 # OSRS Tracker
 
-This repository contains an Old School RuneScape account tracker built with Next.js (App Router), TypeScript, Tailwind CSS, and Prisma.
+A free and open-source web application for tracking Old School RuneScape player progress, milestones, and achievements. Built with modern web technologies to provide a beautiful, responsive experience for the OSRS community.
 
-## Quick Start
+## About
 
-### 1. Install Dependencies
+OSRS Tracker helps players monitor their journey through Gielinor by tracking skill levels, experience gains, boss kill counts, and milestone achievements. Whether you're grinding for your first 99 or working towards max cape, this tool provides the insights you need to stay motivated and track your progress over time.
 
-```bash
-npm install
+## Features
+
+- **Player Progress Tracking** - Monitor skill levels, XP gains, and overall progression with historical data visualization
+- **Milestone System** - Celebrate achievements like 99s, base levels, and boss kill count thresholds
+- **Goal Tracking** - See how close you are to your next milestone and plan your grind accordingly
+- **Account Verification** - Securely link your OSRS account through RuneLite plugin integration to unlock personalized features
+- **Name Change History** - Track account name changes and maintain historical records
+- **Beautiful Dashboard** - Modern, responsive UI built with Tailwind CSS
+- **Real-time Updates** - Refresh player data on-demand to get the latest stats
+
+## Tech Stack
+
+- **Framework**: [Next.js](https://nextjs.org/) 16 (App Router)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Database**: [PostgreSQL](https://www.postgresql.org/) with [Prisma](https://www.prisma.io/)
+- **Authentication**: [NextAuth.js](https://next-auth.js.org/)
+- **Charts**: [Recharts](https://recharts.org/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+
+## Project Structure
+
+```
+osrs-tracker/
+├── app/                    # Next.js app router pages and API routes
+├── components/             # React components
+│   ├── dashboard/         # Dashboard-specific components
+│   ├── layout/            # Header, footer, etc.
+│   ├── player/            # Player tracking components
+│   └── ui/                # Reusable UI components
+├── lib/                    # Utility functions and configurations
+├── prisma/                 # Database schema and migrations
+├── services/               # Business logic services
+│   ├── milestone/         # Milestone calculation logic
+│   ├── name-change/       # Name change tracking
+│   ├── osrs/              # OSRS API integration
+│   ├── player/            # Player data management
+│   └── snapshot/          # Snapshot handling
+└── types/                  # TypeScript type definitions
 ```
 
-### 2. Database Setup (Required for Progress Tracking)
+## Contributing
 
-The app works without a database for basic player lookups, but progress tracking charts require a PostgreSQL database.
+Contributions are welcome! This project is open source and we encourage the community to help improve it. Whether it's bug fixes, new features, or documentation improvements, your contributions make this project better for everyone.
 
-#### Option A: Using pgAdmin4 (Recommended for Local Development)
+Please feel free to:
+- Report bugs
+- Suggest new features
+- Submit pull requests
+- Improve documentation
 
-1. **Find Your PostgreSQL Connection Details:**
-   - Open pgAdmin4
-   - In the left sidebar, right-click on your PostgreSQL server (usually named "PostgreSQL" or similar)
-   - Select **Properties**
-   - Go to the **Connection** tab
-   - Note the following:
-     - **Host name/address** (usually `localhost` or `127.0.0.1`)
-     - **Port** (usually `5432`)
-     - **Username** (usually `postgres`)
-   - You'll need your PostgreSQL password (the one you set during installation)
+## License
 
-2. **Create the Database:**
-   - In pgAdmin4, right-click on **Databases** in the left sidebar
-   - Select **Create** → **Database...**
-   - Enter `osrs_tracker` as the database name
-   - Click **Save**
+This project is open source and available for the community to use and contribute to.
 
-3. **Configure Environment Variables:**
-   - Copy `.env.example` to `.env` (if not already done)
-   - Open `.env` and update the `DATABASE_URL` with your connection details:
-     ```
-     DATABASE_URL="postgresql://username:password@host:port/osrs_tracker"
-     ```
-   - Replace:
-     - `username` with your PostgreSQL username (usually `postgres`)
-     - `password` with your PostgreSQL password
-     - `host` with your host (usually `localhost`)
-     - `port` with your port (usually `5432`)
-   - Example:
-     ```
-     DATABASE_URL="postgresql://postgres:mypassword@localhost:5432/osrs_tracker"
-     ```
+## Acknowledgments
 
-4. **Generate Prisma Client and Run Migrations:**
-   ```bash
-   npm run prisma:generate
-   npm run prisma:migrate -- --name init
-   npm run prisma:migrate -- --name add_snapshots
-   ```
-
-   Or use the direct commands:
-   ```bash
-   npx prisma generate
-   npx prisma migrate dev --name init
-   npx prisma migrate dev --name add_snapshots
-   ```
-
-#### Option B: Without Database (Basic Features Only)
-
-If you skip database setup, the app will work for basic player lookups but progress tracking charts will be disabled.
-
-### 3. Run Development Server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run prisma:generate` - Generate Prisma client
-- `npm run prisma:migrate` - Run database migrations
-- `npm run prisma:studio` - Open Prisma Studio (database GUI)
-
-## Connection String Format
-
-The `DATABASE_URL` follows this format:
-```
-postgresql://username:password@host:port/database_name
-```
-
-**Important Notes:**
-- If your password contains special characters, URL-encode them (e.g., `@` becomes `%40`)
-- The database name should match what you created in pgAdmin4 (`osrs_tracker`)
-- Keep your `.env` file secure and never commit it to version control
-
-What's included
-
-- Next.js app router skeleton
-- Prisma schema for core models
-- Mock OSRS & verification libraries (placeholders)
-- Basic pages and API route stubs
-
-Next steps
-
-- Wire up real OSRS API calls
-- Implement RuneLite plugin and secure verification flow
-- Add authentication (NextAuth or custom)
-
+Built for the Old School RuneScape community. Special thanks to Jagex for providing the official OSRS Hiscores API that makes this project possible.

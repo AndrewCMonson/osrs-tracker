@@ -2,19 +2,45 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Sword, LogIn, Menu, X, Search, Loader2, Sun, Moon } from 'lucide-react';
+import { Sword, LogIn, Menu, X, Search, Loader2, Sun, Moon, User, LogOut } from 'lucide-react';
 import { normalizeUsername } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTheme } from '@/components/theme-provider';
-import { useState, FormEvent } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { useState, FormEvent, useEffect, useRef } from 'react';
 
 export function Header() {
   const router = useRouter();
   const { theme, toggleTheme, mounted } = useTheme();
+  const { data: session, status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: '/' });
+    setUserMenuOpen(false);
+  };
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    if (userMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [userMenuOpen]);
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -78,15 +104,53 @@ export function Header() {
                 )}
               </Button>
             )}
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/login">
-                <LogIn className="h-4 w-4 mr-2" />
-                Login
-              </Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link href="/register">Sign Up</Link>
-            </Button>
+            {status === 'authenticated' && session?.user ? (
+              <div className="relative" ref={userMenuRef}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="gap-2"
+                >
+                  <User className="h-4 w-4" />
+                  <span className="max-w-[100px] truncate">
+                    {session.user.name || session.user.email}
+                  </span>
+                </Button>
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 rounded-lg bg-stone-900 border border-stone-800 shadow-lg z-50">
+                    <div className="p-2">
+                      <Link
+                        href="/dashboard"
+                        className="block px-3 py-2 text-sm text-stone-300 hover:bg-stone-800 rounded"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        Dashboard
+                      </Link>
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full text-left px-3 py-2 text-sm text-stone-300 hover:bg-stone-800 rounded flex items-center gap-2"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/login">
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Login
+                  </Link>
+                </Button>
+                <Button size="sm" asChild>
+                  <Link href="/register">Sign Up</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -139,12 +203,33 @@ export function Header() {
                   )}
                 </Button>
               )}
-              <Button variant="outline" size="sm" className="flex-1" asChild>
-                <Link href="/login">Login</Link>
-              </Button>
-              <Button size="sm" className="flex-1" asChild>
-                <Link href="/register">Sign Up</Link>
-              </Button>
+              {status === 'authenticated' && session?.user ? (
+                <>
+                  <Link
+                    href="/dashboard"
+                    className="flex-1 px-3 py-2 text-sm text-center text-stone-300 hover:bg-stone-800 rounded border border-stone-700"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex-1 px-3 py-2 text-sm text-center text-stone-300 hover:bg-stone-800 rounded border border-stone-700 flex items-center justify-center gap-2"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" className="flex-1" asChild>
+                    <Link href="/login">Login</Link>
+                  </Button>
+                  <Button size="sm" className="flex-1" asChild>
+                    <Link href="/register">Sign Up</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}

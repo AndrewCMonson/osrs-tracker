@@ -48,3 +48,6 @@ export const HISCORES_ENDPOINTS: Record<string, HiscoresEndpoint> = {
 };
 
 
+
+
+

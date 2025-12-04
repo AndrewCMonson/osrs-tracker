@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         email,
-        passwordHash,
+        password: passwordHash,
       },
       select: {
         id: true,
@@ -71,5 +71,8 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+
+
 
 

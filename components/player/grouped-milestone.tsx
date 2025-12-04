@@ -175,16 +175,8 @@ export function GroupedMilestone({ group, achievementDates }: GroupedMilestonePr
 
   // Calculate overall progress
   const overallProgress = group.maxValue > 0 ? (group.currentValue / group.maxValue) * 100 : 0;
-
-  // Format current value
-  const formatValue = (value: number): string => {
-    if (group.type === 'skill_99' || group.type === 'total_level') {
-      return value.toLocaleString();
-    }
-    return value.toLocaleString();
-  };
-
-  // Get milestone target value for positioning
+  
+  // Get milestone value helper
   const getMilestoneValue = (milestone: Milestone): number => {
     if (milestone.type === 'skill_99') {
       return (milestone as Skill99Milestone).targetXp;
@@ -196,6 +188,24 @@ export function GroupedMilestone({ group, achievementDates }: GroupedMilestonePr
       return (milestone as TotalLevelMilestone).targetLevel;
     }
     return 0;
+  };
+  
+  // Check if we have milestones at the start (0%) and end (100%)
+  const hasStartMilestone = sortedMilestones.some((m) => {
+    const value = getMilestoneValue(m);
+    return (value / group.maxValue) * 100 <= 0.1;
+  });
+  const hasEndMilestone = sortedMilestones.some((m) => {
+    const value = getMilestoneValue(m);
+    return (value / group.maxValue) * 100 >= 99.9;
+  });
+
+  // Format current value
+  const formatValue = (value: number): string => {
+    if (group.type === 'skill_99' || group.type === 'total_level') {
+      return value.toLocaleString();
+    }
+    return value.toLocaleString();
   };
 
   return (
@@ -237,7 +247,11 @@ export function GroupedMilestone({ group, achievementDates }: GroupedMilestonePr
         <div className="h-8 bg-stone-700/50 rounded-full relative">
           <div
             className="h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-500 rounded-full"
-            style={{ width: `${Math.min(overallProgress, 100)}%` }}
+            style={{ 
+              width: hasEndMilestone && overallProgress >= 99.9
+                ? `calc(100% - 2rem)`
+                : `${Math.min(overallProgress, 100)}%`,
+            }}
           />
           
           {/* Milestone markers with numbers inside circles */}
@@ -273,19 +287,22 @@ export function GroupedMilestone({ group, achievementDates }: GroupedMilestonePr
 
             // For circles at 0% and 100%, position them so they sit at the bar edges
             // Circle is 32px wide (16px radius)
-            // For 100%: circle's right edge aligns with bar's right edge (use right-0, translate right by half width)
-            // For 0%: circle's left edge aligns with bar's left edge (use left-0, translate left by half width)
+            // For 100%: position right edge exactly at container's right edge (right: 0, no X translation)
+            // For 0%: position left edge at container's left edge (left: 1rem, translateX(-50%) puts left edge at 0)
             const isAtStart = position <= 0.1;
             const isAtEnd = position >= 99.9;
 
             return (
               <div
                 key={milestone.id}
-                className={cn(
-                  "absolute transform -translate-y-1/2 top-1/2",
-                  isAtStart ? "left-0 -translate-x-1/2" : isAtEnd ? "right-0 translate-x-1/2" : "-translate-x-1/2"
-                )}
-                style={isAtStart || isAtEnd ? {} : { left: `${position}%` }}
+                className="absolute top-1/2"
+                style={
+                  isAtStart
+                    ? { left: '1rem', transform: 'translateX(-50%) translateY(-50%)' }
+                    : isAtEnd
+                    ? { right: 0, transform: 'translateY(-50%)' }
+                    : { left: `${position}%`, transform: 'translateX(-50%) translateY(-50%)' }
+                }
               >
                 <div
                   className={cn(

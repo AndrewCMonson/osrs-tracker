@@ -3,12 +3,15 @@
 import Image from 'next/image';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Player, ACCOUNT_TYPE_DISPLAY } from '@/types/player';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatRelativeTime, formatUsername } from '@/lib/utils';
 import { getAccountTypeIcon } from '@/lib/images';
 import { RefreshCw, Shield, UserCheck, Swords, Save } from 'lucide-react';
+import { NameChangeForm } from './name-change-form';
+import { VerificationModal } from './verification-modal';
 
 interface PlayerHeaderProps {
   player: Player;
@@ -18,8 +21,16 @@ interface PlayerHeaderProps {
 
 export function PlayerHeader({ player, onRefresh, isRefreshing }: PlayerHeaderProps) {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
   const [snapshotMessage, setSnapshotMessage] = useState<string | null>(null);
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+  const [isStartingVerification, setIsStartingVerification] = useState(false);
+  const [verificationData, setVerificationData] = useState<{
+    verificationId: string;
+    token: string;
+    expiresAt: Date;
+  } | null>(null);
 
   const accountTypeBadgeVariant = (): 'default' | 'ironman' | 'hardcore' | 'ultimate' => {
     if (player.accountType.includes('hardcore')) return 'hardcore';
@@ -57,6 +68,51 @@ export function PlayerHeader({ player, onRefresh, isRefreshing }: PlayerHeaderPr
       setIsSavingSnapshot(false);
       // Clear message after 3 seconds
       setTimeout(() => setSnapshotMessage(null), 3000);
+    }
+  };
+
+  const handleClaimAccount = async () => {
+    // Check if user is authenticated
+    if (status === 'unauthenticated') {
+      router.push(`/login?callbackUrl=${encodeURIComponent(`/player/${encodeURIComponent(player.username)}`)}`);
+      return;
+    }
+
+    if (status === 'loading') {
+      return; // Still checking authentication
+    }
+
+    setIsStartingVerification(true);
+    try {
+      const response = await fetch('/api/verify/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: player.username,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.verification) {
+        setVerificationData({
+          verificationId: data.verification.id,
+          token: data.verification.token,
+          expiresAt: new Date(data.verification.expiresAt),
+        });
+        setIsVerificationModalOpen(true);
+      } else {
+        setSnapshotMessage(data.error || 'Failed to start verification');
+        setTimeout(() => setSnapshotMessage(null), 5000);
+      }
+    } catch (error) {
+      console.error('Error starting verification:', error);
+      setSnapshotMessage('Failed to start verification. Please try again.');
+      setTimeout(() => setSnapshotMessage(null), 5000);
+    } finally {
+      setIsStartingVerification(false);
     }
   };
 
@@ -124,7 +180,7 @@ export function PlayerHeader({ player, onRefresh, isRefreshing }: PlayerHeaderPr
       </div>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"
@@ -134,7 +190,7 @@ export function PlayerHeader({ player, onRefresh, isRefreshing }: PlayerHeaderPr
             <Save
               className={`h-4 w-4 mr-2 ${isSavingSnapshot ? 'animate-spin' : ''}`}
             />
-            Save Snapshot
+            Update
           </Button>
           {onRefresh && (
             <Button
@@ -149,6 +205,7 @@ export function PlayerHeader({ player, onRefresh, isRefreshing }: PlayerHeaderPr
               Refresh
             </Button>
           )}
+          <NameChangeForm username={player.username} />
         </div>
         {snapshotMessage && (
           <p className={`text-xs ${
@@ -160,11 +217,30 @@ export function PlayerHeader({ player, onRefresh, isRefreshing }: PlayerHeaderPr
           </p>
         )}
         {!player.claimedBy && (
-          <Button size="sm">
-            Claim Account
+          <Button 
+            size="sm"
+            onClick={handleClaimAccount}
+            disabled={isStartingVerification || status === 'loading'}
+          >
+            {isStartingVerification ? 'Starting...' : 'Claim Account'}
           </Button>
         )}
       </div>
+
+      {/* Verification Modal */}
+      {verificationData && (
+        <VerificationModal
+          isOpen={isVerificationModalOpen}
+          onClose={() => {
+            setIsVerificationModalOpen(false);
+            setVerificationData(null);
+          }}
+          username={player.displayName || player.username}
+          verificationId={verificationData.verificationId}
+          token={verificationData.token}
+          expiresAt={verificationData.expiresAt}
+        />
+      )}
     </div>
   );
 }

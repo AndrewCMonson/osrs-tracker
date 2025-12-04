@@ -123,7 +123,7 @@ export const CATEGORY_DISPLAY_NAMES: Record<MilestoneCategory, string> = {
 // Common milestone thresholds
 export const BASE_LEVEL_THRESHOLDS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 99] as const;
 export const TOTAL_LEVEL_THRESHOLDS = [
-  250, 500, 750, 1000, 1250, 1500, 1750, 2000, 2100, 2200, 2277, 2376,
+  100, 500, 1000, 1500, 1750, 2000, 2100, 2150, 2200, 2250, 2300, 2367,
 ] as const;
 export const COMBAT_LEVEL_THRESHOLDS = [50, 70, 90, 100, 110, 120, 126] as const;
 

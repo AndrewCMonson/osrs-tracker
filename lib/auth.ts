@@ -12,6 +12,7 @@ const loginSchema = z.object({
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
+  secret: process.env.AUTH_SECRET,
   session: {
     strategy: 'jwt',
   },
@@ -40,11 +41,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { email },
         });
 
-        if (!user || !user.passwordHash) {
+        if (!user || !user.password) {
           return null;
         }
 
-        const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+        const passwordMatch = await bcrypt.compare(password, user.password);
 
         if (!passwordMatch) {
           return null;
@@ -88,5 +89,8 @@ export async function hashPassword(password: string): Promise<string> {
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   return bcrypt.compare(password, hash);
 }
+
+
+
 
 
