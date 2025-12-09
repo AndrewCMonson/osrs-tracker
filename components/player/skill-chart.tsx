@@ -197,7 +197,7 @@ export function SkillChart({ username }: SkillChartProps) {
 
     // Build chart data
     return sortedDates.map((date) => {
-      const point: Record<string, string | number> = {
+      const point: Record<string, string | number | null> = {
         date: new Date(date).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',

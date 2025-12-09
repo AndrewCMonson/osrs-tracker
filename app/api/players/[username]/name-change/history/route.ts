@@ -24,7 +24,7 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      nameChanges: nameChanges.map((change) => ({
+      nameChanges: nameChanges.map((change: typeof nameChanges[number]) => ({
         id: change.id,
         oldUsername: change.oldUsername,
         newUsername: change.newUsername,

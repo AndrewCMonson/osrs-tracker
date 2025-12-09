@@ -31,19 +31,19 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate aggregated XP across all accounts
-    const totalXp = players.reduce((sum, player) => {
+    const totalXp = players.reduce((sum: number, player: typeof players[number]) => {
       return sum + Number(player.totalXp);
     }, 0);
 
     // Calculate total levels
-    const totalLevels = players.reduce((sum, player) => {
+    const totalLevels = players.reduce((sum: number, player: typeof players[number]) => {
       return sum + player.totalLevel;
     }, 0);
 
     // Get skill XP breakdown across all accounts
     const skillXpMap = new Map<string, bigint>();
-    players.forEach(player => {
-      player.skills.forEach(skill => {
+    players.forEach((player: typeof players[number]) => {
+      player.skills.forEach((skill: typeof player.skills[number]) => {
         const currentXp = skillXpMap.get(skill.name) || BigInt(0);
         skillXpMap.set(skill.name, currentXp + skill.xp);
       });
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      accounts: players.map(player => ({
+      accounts: players.map((player: typeof players[number]) => ({
         id: player.id,
         username: player.username,
         displayName: player.displayName || player.username,
