@@ -6,17 +6,10 @@
  * - Run Prisma migration: npx prisma migrate dev --name add_snapshots
  */
 
-import { db } from '@/lib/db';
+import { db, isDatabaseAvailable } from '@/lib/db';
 import { Player } from '@/types/player';
 import { SKILLS, SkillName } from '@/types/skills';
 import { BOSSES, BossName } from '@/types/bosses';
-
-/**
- * Check if database is available
- */
-function isDatabaseAvailable(): boolean {
-  return !!process.env.DATABASE_URL;
-}
 
 export interface SnapshotData {
   id: string;

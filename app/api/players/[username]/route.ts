@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { lookupPlayer } from '@/services/player';
+import { successResponse, errorResponse, notFoundResponse } from '@/lib/api/response';
 
 export async function GET(
   request: NextRequest,
@@ -12,22 +13,15 @@ export async function GET(
     const result = await lookupPlayer(decodedUsername);
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: 404 }
-      );
+      return notFoundResponse(result.error || 'Player not found');
     }
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       player: result.player,
     });
   } catch (error) {
     console.error('Error fetching player:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch player data' },
-      { status: 500 }
-    );
+    return errorResponse('Failed to fetch player data', 500, error);
   }
 }
 

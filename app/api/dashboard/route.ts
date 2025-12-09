@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { successResponse, errorResponse, unauthorizedResponse } from '@/lib/api/response';
 
 /**
  * Get all claimed accounts for the authenticated user
@@ -10,10 +11,7 @@ export async function GET(request: NextRequest) {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return unauthorizedResponse();
     }
 
     // Get all players claimed by this user
@@ -53,8 +51,7 @@ export async function GET(request: NextRequest) {
       Array.from(skillXpMap.entries()).map(([name, xp]) => [name, Number(xp)])
     );
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       accounts: players.map((player: typeof players[number]) => ({
         id: player.id,
         username: player.username,
@@ -74,10 +71,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch dashboard data' },
-      { status: 500 }
-    );
+    return errorResponse('Failed to fetch dashboard data', 500, error);
   }
 }
 

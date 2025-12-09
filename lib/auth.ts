@@ -1,9 +1,9 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
-import bcrypt from 'bcryptjs';
 import { prisma } from './db';
 import { z } from 'zod';
+import { verifyPassword } from './auth/password';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -45,7 +45,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        const passwordMatch = await bcrypt.compare(password, user.password);
+        const passwordMatch = await verifyPassword(password, user.password);
 
         if (!passwordMatch) {
           return null;
@@ -76,19 +76,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
 });
 
-/**
- * Hash a password for storage
- */
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 12);
-}
-
-/**
- * Verify a password against a hash
- */
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(password, hash);
-}
+// Re-export password utilities for backward compatibility
+export { hashPassword, verifyPassword } from './auth/password';
 
 
 

@@ -66,3 +66,6 @@ if (process.env.DATABASE_URL) {
 export { prisma, db };
 export default prisma;
 
+// Re-export helpers for convenience
+export * from './db/helpers';
+

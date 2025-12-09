@@ -4,22 +4,11 @@
 
 import { Player, PlayerProfile, AccountType } from '@/types/player';
 import { calculateCombatLevel } from '@/types/milestones';
-import { SKILLS } from '@/types/skills';
 import { fetchPlayerHiscores, getMockPlayer, shouldUseMock, OsrsPlayerData } from '../osrs';
 import { calculatePlayerMilestones } from '../milestone';
-import { normalizeUsername } from '@/lib/utils';
+import { normalizeUsername, calculateTotalLevel } from '@/lib/utils';
 import { savePlayerSnapshot } from '../snapshot';
 import { getCurrentUsername } from '../name-change';
-
-/**
- * Calculate actual total level from individual skills (capped at 99 each)
- */
-function calculateTotalLevel(skills: Record<string, { level: number }>): number {
-  return SKILLS.reduce((total, skill) => {
-    const level = skills[skill]?.level ?? 1;
-    return total + Math.min(level, 99); // Cap at 99 for total level calculation
-  }, 0);
-}
 
 export interface PlayerLookupResult {
   success: boolean;

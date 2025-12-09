@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { submitNameChange, validateNameChange, validateNewUsername } from '@/services/name-change';
-import { normalizeUsername } from '@/lib/utils';
+import { NextRequest } from 'next/server';
+import { submitNameChange, validateNameChange } from '@/services/name-change';
+import { successResponse, errorResponse } from '@/lib/api/response';
 
 export async function POST(
   request: NextRequest,
@@ -13,33 +13,23 @@ export async function POST(
     const { newUsername } = body;
 
     if (!newUsername || typeof newUsername !== 'string') {
-      return NextResponse.json(
-        { success: false, error: 'New username is required' },
-        { status: 400 }
-      );
+      return errorResponse('New username is required', 400);
     }
 
     // Submit the name change (this will validate the full name change)
     const result = await submitNameChange(decodedUsername, newUsername);
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: 400 }
-      );
+      return errorResponse(result.error || 'Failed to submit name change', 400);
     }
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       message: 'Name change submitted successfully',
       playerId: result.playerId,
     });
   } catch (error) {
     console.error('Error submitting name change:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to submit name change' },
-      { status: 500 }
-    );
+    return errorResponse('Failed to submit name change', 500, error);
   }
 }
 
@@ -57,27 +47,20 @@ export async function GET(
     const newUsername = searchParams.get('newUsername');
 
     if (!newUsername) {
-      return NextResponse.json(
-        { success: false, error: 'newUsername query parameter is required' },
-        { status: 400 }
-      );
+      return errorResponse('newUsername query parameter is required', 400);
     }
 
     // Validate the full name change (checks old username, new username, and stats match)
     const validation = await validateNameChange(decodedUsername, newUsername);
 
-    return NextResponse.json({
-      success: validation.valid,
+    return successResponse({
       valid: validation.valid,
       verified: validation.verified,
       error: validation.error,
     });
   } catch (error) {
     console.error('Error validating name change:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to validate name change' },
-      { status: 500 }
-    );
+    return errorResponse('Failed to validate name change', 500, error);
   }
 }
 

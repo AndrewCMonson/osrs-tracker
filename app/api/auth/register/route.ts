@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
+import { successResponse, errorResponse } from '@/lib/api/response';
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -22,10 +23,7 @@ export async function POST(request: NextRequest) {
     const parsed = registerSchema.safeParse(body);
     if (!parsed.success) {
       const firstError = parsed.error.issues[0];
-      return NextResponse.json(
-        { success: false, error: firstError?.message || 'Validation failed' },
-        { status: 400 }
-      );
+      return errorResponse(firstError?.message || 'Validation failed', 400);
     }
 
     const { name, email, password } = parsed.data;
@@ -36,10 +34,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { success: false, error: 'An account with this email already exists' },
-        { status: 400 }
-      );
+      return errorResponse('An account with this email already exists', 400);
     }
 
     // Hash password and create user
@@ -59,17 +54,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       message: 'Account created successfully',
       user,
     });
   } catch (error) {
     console.error('Registration error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to create account' },
-      { status: 500 }
-    );
+    return errorResponse('Failed to create account', 500, error);
   }
 }
 

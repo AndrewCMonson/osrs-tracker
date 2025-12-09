@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { lookupPlayer } from '@/services/player';
+import { savePlayerSnapshot } from '@/services/snapshot';
+import { successResponse, errorResponse, notFoundResponse } from '@/lib/api/response';
 
 export async function POST(
   request: NextRequest,
@@ -12,29 +14,20 @@ export async function POST(
     // Force refresh from OSRS hiscores
     const result = await lookupPlayer(decodedUsername);
 
-    if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: 404 }
-      );
+    if (!result.success || !result.player) {
+      return notFoundResponse(result.error || 'Player not found');
     }
 
-    // In a real implementation, you would:
-    // 1. Update the database with new stats
-    // 2. Create a snapshot for history tracking
-    // 3. Check for new milestones
+    // Update the database with new stats and create a snapshot
+    await savePlayerSnapshot(result.player, true); // Force snapshot creation
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       player: result.player,
       message: 'Player data refreshed successfully',
     });
   } catch (error) {
     console.error('Error refreshing player:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to refresh player data' },
-      { status: 500 }
-    );
+    return errorResponse('Failed to refresh player data', 500, error);
   }
 }
 
