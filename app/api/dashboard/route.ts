@@ -1,6 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
+import { NextRequest, NextResponse } from 'next/server';
+
+type PlayerWithRelations = Prisma.PlayerGetPayload<{
+  include: {
+    skills: true;
+    bossKCs: true;
+  };
+}>;
 
 /**
  * Get all claimed accounts for the authenticated user
@@ -17,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all players claimed by this user
-    const players = await prisma.player.findMany({
+    const players: PlayerWithRelations[] = await prisma.player.findMany({
       where: {
         claimedById: session.user.id,
       },
@@ -31,19 +39,19 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate aggregated XP across all accounts
-    const totalXp = players.reduce((sum, player) => {
+    const totalXp = players.reduce((sum: number, player: PlayerWithRelations) => {
       return sum + Number(player.totalXp);
     }, 0);
 
     // Calculate total levels
-    const totalLevels = players.reduce((sum, player) => {
+    const totalLevels = players.reduce((sum: number, player: PlayerWithRelations) => {
       return sum + player.totalLevel;
     }, 0);
 
     // Get skill XP breakdown across all accounts
     const skillXpMap = new Map<string, bigint>();
-    players.forEach(player => {
-      player.skills.forEach(skill => {
+    players.forEach((player: PlayerWithRelations) => {
+      player.skills.forEach((skill: PlayerWithRelations['skills'][number]) => {
         const currentXp = skillXpMap.get(skill.name) || BigInt(0);
         skillXpMap.set(skill.name, currentXp + skill.xp);
       });
@@ -55,7 +63,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      accounts: players.map(player => ({
+      accounts: players.map((player: PlayerWithRelations) => ({
         id: player.id,
         username: player.username,
         displayName: player.displayName || player.username,
