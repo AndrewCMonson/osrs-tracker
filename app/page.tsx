@@ -55,10 +55,10 @@ export default function HomePage() {
 			<section className="relative py-20 lg:py-32">
 				<div className="container mx-auto px-4">
 					<div className="max-w-4xl mx-auto text-center">
-						<div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-600/10 border border-amber-600/20 text-amber-500 text-sm mb-8">
+						{/* <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-600/10 border border-amber-600/20 text-amber-500 text-sm mb-8">
 							<Zap className="h-4 w-4" />
 							<span>Free & Open Source OSRS Tracking</span>
-						</div>
+						</div> */}
 
 						<h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
 							Track Your <span className="text-gradient">OSRS Journey</span>

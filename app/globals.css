@@ -15,6 +15,8 @@
   --text-muted: oklch(55% 0.01 60);
   --border-color: oklch(28% 0.01 60);
   --accent: oklch(70% 0.15 65);
+  --accent-light: oklch(70% 0.15 65);
+  --accent-dark: oklch(55% 0.18 65);
   color-scheme: dark;
 }
 
@@ -28,6 +30,8 @@
   --text-muted: oklch(55% 0.01 60);
   --border-color: oklch(85% 0.01 60);
   --accent: oklch(55% 0.18 65);
+  --accent-light: oklch(55% 0.18 65);
+  --accent-dark: oklch(45% 0.16 60);
   color-scheme: light;
 }
 
