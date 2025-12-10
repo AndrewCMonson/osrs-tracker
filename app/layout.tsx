@@ -28,14 +28,6 @@ export const metadata: Metadata = {
 		'stats',
 		'progress',
 	],
-	icons: {
-		icon: [
-			{ url: '/logo.png', type: 'image/png' },
-		],
-		apple: [
-			{ url: '/logo.png', type: 'image/png' },
-		],
-	},
 };
 
 export default function RootLayout({
