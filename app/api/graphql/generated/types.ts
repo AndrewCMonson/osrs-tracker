@@ -1,6 +1,7 @@
 import { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import { Player } from '@/types/player';
-import { Milestone } from '@/types/milestones';
+import { PlayerModel, BossKcModel } from '@/types/prisma';
+import { Milestone as MilestoneModel } from '@/types/milestones';
+import { PlayerSnapshot as SnapshotModel, SkillSnapshot as SkillSnapshotModel, BossSnapshot as BossSnapshotModel } from '@prisma/client';
 import { GraphQLContext } from '../context';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
@@ -394,8 +395,8 @@ export type DirectiveResolverFn<TResult = Record<PropertyKey, never>, TParent = 
 export type ResolversTypes = ResolversObject<{
   BigInt: ResolverTypeWrapper<Scalars['BigInt']['output']>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
-  BossKC: ResolverTypeWrapper<BossKc>;
-  BossSnapshot: ResolverTypeWrapper<BossSnapshot>;
+  BossKC: ResolverTypeWrapper<BossKcModel>;
+  BossSnapshot: ResolverTypeWrapper<BossSnapshotModel>;
   ClaimPlayerResponse: ResolverTypeWrapper<ClaimPlayerResponse>;
   Dashboard: ResolverTypeWrapper<Dashboard>;
   DashboardTotals: ResolverTypeWrapper<DashboardTotals>;
@@ -404,11 +405,11 @@ export type ResolversTypes = ResolversObject<{
   HistoryDataPoint: ResolverTypeWrapper<HistoryDataPoint>;
   HistoryResponse: ResolverTypeWrapper<HistoryResponse>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
-  Milestone: ResolverTypeWrapper<Milestone>;
+  Milestone: ResolverTypeWrapper<MilestoneModel>;
   MilestoneStats: ResolverTypeWrapper<MilestoneStats>;
   MilestonesResponse: ResolverTypeWrapper<Omit<MilestonesResponse, 'achieved' | 'inProgress' | 'nearest99s'> & { achieved: Array<ResolversTypes['Milestone']>, inProgress: Array<ResolversTypes['Milestone']>, nearest99s: Array<ResolversTypes['Milestone']> }>;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
-  Player: ResolverTypeWrapper<Player>;
+  Player: ResolverTypeWrapper<PlayerModel>;
   PlayerAccount: ResolverTypeWrapper<PlayerAccount>;
   PlayerResponse: ResolverTypeWrapper<Omit<PlayerResponse, 'player'> & { player?: Maybe<ResolversTypes['Player']> }>;
   PlayerSkills: ResolverTypeWrapper<PlayerSkills>;
@@ -416,9 +417,9 @@ export type ResolversTypes = ResolversObject<{
   SkillData: ResolverTypeWrapper<SkillData>;
   SkillHistory: ResolverTypeWrapper<SkillHistory>;
   SkillMap: ResolverTypeWrapper<SkillMap>;
-  SkillSnapshot: ResolverTypeWrapper<SkillSnapshot>;
+  SkillSnapshot: ResolverTypeWrapper<SkillSnapshotModel>;
   SkillXpMap: ResolverTypeWrapper<SkillXpMap>;
-  Snapshot: ResolverTypeWrapper<Snapshot>;
+  Snapshot: ResolverTypeWrapper<SnapshotModel>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Subscription: ResolverTypeWrapper<Record<PropertyKey, never>>;
   TotalHistoryPoint: ResolverTypeWrapper<TotalHistoryPoint>;
@@ -428,8 +429,8 @@ export type ResolversTypes = ResolversObject<{
 export type ResolversParentTypes = ResolversObject<{
   BigInt: Scalars['BigInt']['output'];
   Boolean: Scalars['Boolean']['output'];
-  BossKC: BossKc;
-  BossSnapshot: BossSnapshot;
+  BossKC: BossKcModel;
+  BossSnapshot: BossSnapshotModel;
   ClaimPlayerResponse: ClaimPlayerResponse;
   Dashboard: Dashboard;
   DashboardTotals: DashboardTotals;
@@ -438,11 +439,11 @@ export type ResolversParentTypes = ResolversObject<{
   HistoryDataPoint: HistoryDataPoint;
   HistoryResponse: HistoryResponse;
   Int: Scalars['Int']['output'];
-  Milestone: Milestone;
+  Milestone: MilestoneModel;
   MilestoneStats: MilestoneStats;
   MilestonesResponse: Omit<MilestonesResponse, 'achieved' | 'inProgress' | 'nearest99s'> & { achieved: Array<ResolversParentTypes['Milestone']>, inProgress: Array<ResolversParentTypes['Milestone']>, nearest99s: Array<ResolversParentTypes['Milestone']> };
   Mutation: Record<PropertyKey, never>;
-  Player: Player;
+  Player: PlayerModel;
   PlayerAccount: PlayerAccount;
   PlayerResponse: Omit<PlayerResponse, 'player'> & { player?: Maybe<ResolversParentTypes['Player']> };
   PlayerSkills: PlayerSkills;
@@ -450,9 +451,9 @@ export type ResolversParentTypes = ResolversObject<{
   SkillData: SkillData;
   SkillHistory: SkillHistory;
   SkillMap: SkillMap;
-  SkillSnapshot: SkillSnapshot;
+  SkillSnapshot: SkillSnapshotModel;
   SkillXpMap: SkillXpMap;
-  Snapshot: Snapshot;
+  Snapshot: SnapshotModel;
   String: Scalars['String']['output'];
   Subscription: Record<PropertyKey, never>;
   TotalHistoryPoint: TotalHistoryPoint;

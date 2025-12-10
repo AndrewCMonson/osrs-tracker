@@ -9,6 +9,10 @@ generates:
       useIndexSignature: true
       contextType: '../context#GraphQLContext'
       mappers:
-        Player: '@/types/player#Player'
-        Milestone: '@/types/milestones#Milestone'
+        Player: '@/types/prisma#PlayerModel'
+        BossKC: '@/types/prisma#BossKcModel'
+        Milestone: '@/types/milestones#Milestone as MilestoneModel'
+        Snapshot: '@prisma/client#PlayerSnapshot as SnapshotModel'
+        SkillSnapshot: '@prisma/client#SkillSnapshot as SkillSnapshotModel'
+        BossSnapshot: '@prisma/client#BossSnapshot as BossSnapshotModel'
 

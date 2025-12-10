@@ -7,7 +7,7 @@ import { GraphQLContext } from './context';
 import { mutations } from './resolvers/mutations';
 import { queries } from './resolvers/queries';
 import { subscriptions } from './resolvers/subscriptions';
-import { typeResolvers } from './resolvers/types';
+import { bossResolvers, playerResolvers, scalarResolvers } from './resolvers/types';
 
 export const schema = createSchema<GraphQLContext>({
   typeDefs: /* GraphQL */ `
@@ -238,11 +238,14 @@ export const schema = createSchema<GraphQLContext>({
       rank: Int!
     }
   `,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resolvers: {
     Query: queries,
     Mutation: mutations,
     Subscription: subscriptions,
-    ...typeResolvers,
-  },
+    Player: playerResolvers,
+    BossKC: bossResolvers,
+    ...scalarResolvers,
+  } as any,
 });
 

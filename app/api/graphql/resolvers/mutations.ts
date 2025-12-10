@@ -5,13 +5,10 @@
 import { normalizeUsername } from '@/lib/utils';
 import { lookupPlayer } from '@/services/player';
 import { Resolvers } from '../generated/types';
+import { db } from '@/lib/db';
 
-export const mutations: Resolvers["Mutation"] = {
-  refreshPlayer: async (
-    _,
-    { username },
-    __
-  ) => {
+export const mutations: Resolvers['Mutation'] = {
+  refreshPlayer: async (_, { username }) => {
     const result = await lookupPlayer(username);
 
     if (!result.success || !result.player) {
@@ -29,12 +26,8 @@ export const mutations: Resolvers["Mutation"] = {
     };
   },
 
-  claimPlayer: async (
-    _,
-    { username, token },
-    context
-  ) => {
-    if (!context.userId) {
+  claimPlayer: async (_, { username, token }, { userId }) => {
+    if (!userId) {
       return {
         success: false,
         message: null,
@@ -44,7 +37,7 @@ export const mutations: Resolvers["Mutation"] = {
 
     try {
       // Verify the token
-      const verification = await context.prisma.claimVerification.findUnique({
+      const verification = await db.claimVerification.findUnique({
         where: { token },
         include: { user: true },
       });
@@ -65,7 +58,7 @@ export const mutations: Resolvers["Mutation"] = {
         };
       }
 
-      if (verification.userId !== context.userId) {
+      if (verification.userId !== userId) {
         return {
           success: false,
           message: null,
@@ -76,7 +69,7 @@ export const mutations: Resolvers["Mutation"] = {
       const normalizedUsername = normalizeUsername(username);
 
       // Check if player exists, create if not
-      let player = await context.prisma.player.findUnique({
+      let player = await db.player.findUnique({
         where: { username: normalizedUsername },
       });
 
@@ -92,7 +85,7 @@ export const mutations: Resolvers["Mutation"] = {
         }
 
         // Create player in database
-        player = await context.prisma.player.create({
+        player = await db.player.create({
           data: {
             username: normalizedUsername,
             displayName: lookupResult.player.displayName,
@@ -100,22 +93,22 @@ export const mutations: Resolvers["Mutation"] = {
             totalLevel: lookupResult.player.totalLevel,
             totalXp: BigInt(lookupResult.player.totalXp),
             combatLevel: lookupResult.player.combatLevel,
-            claimedById: context.userId,
+            claimedById: userId,
           },
         });
       } else {
         // Update existing player
-        player = await context.prisma.player.update({
+        player = await db.player.update({
           where: { id: player.id },
           data: {
-            claimedById: context.userId,
+            claimedById: userId,
             updatedAt: new Date(),
           },
         });
       }
 
       // Mark verification as used (optional - you might want to keep it for history)
-      await context.prisma.claimVerification.update({
+      await db.claimVerification.update({
         where: { id: verification.id },
         data: { status: 'verified' },
       });
@@ -135,12 +128,8 @@ export const mutations: Resolvers["Mutation"] = {
     }
   },
 
-  updatePlayerDisplayName: async (
-    _,
-    { username, displayName },
-    context
-  ) => {
-    if (!context.userId) {
+  updatePlayerDisplayName: async (_, { username, displayName }, {userId}) => {
+    if (!userId) {
       return {
         success: false,
         player: null,
@@ -151,7 +140,7 @@ export const mutations: Resolvers["Mutation"] = {
     try {
       const normalizedUsername = normalizeUsername(username);
 
-      const player = await context.prisma.player.findUnique({
+      const player = await db.player.findUnique({
         where: { username: normalizedUsername },
       });
 
@@ -163,7 +152,7 @@ export const mutations: Resolvers["Mutation"] = {
         };
       }
 
-      if (player.claimedById !== context.userId) {
+      if (player.claimedById !== userId) {
         return {
           success: false,
           player: null,
@@ -171,7 +160,7 @@ export const mutations: Resolvers["Mutation"] = {
         };
       }
 
-      const updatedPlayer = await context.prisma.player.update({
+      const updatedPlayer = await db.player.update({
         where: { id: player.id },
         data: { displayName },
       });
@@ -184,7 +173,7 @@ export const mutations: Resolvers["Mutation"] = {
           player: {
             ...result.player,
             displayName,
-            claimedBy: context.userId,
+            claimedBy: userId,
           },
           error: null,
         };

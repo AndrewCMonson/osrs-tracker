@@ -6,15 +6,11 @@ import { normalizeUsername } from '@/lib/utils';
 import { calculatePlayerMilestones, getNearest99s } from '@/services/milestone';
 import { lookupPlayer } from '@/services/player';
 import { getAllSkillsHistory, getTotalXpHistory } from '@/services/snapshot';
-import { PlayerWithRelations } from '@/types/prisma';
 import { Resolvers } from '../generated/types';
+import { db } from '@/lib/db';
 
 export const queries: Resolvers['Query'] = {
-  player: async (
-    _,
-    { username },
-    context
-  ) => {
+  player: async (_, { username }) => {
     const result = await lookupPlayer(username);
 
     if (!result.success || !result.player) {
@@ -23,7 +19,7 @@ export const queries: Resolvers['Query'] = {
 
     // Check if player is claimed
     try {
-      const dbPlayer = await context.prisma.player.findUnique({
+      const dbPlayer = await db.player.findUnique({
         where: { username: normalizeUsername(username) },
         select: { claimedById: true, updatedAt: true },
       });
@@ -43,20 +39,16 @@ export const queries: Resolvers['Query'] = {
     return result.player;
   },
 
-  players: async (
-    _,
-    { claimed },
-    context
-  ) => {
+  players: async (_, { claimed }, {userId}) => {
     if (claimed === true) {
       // Return only claimed players for the authenticated user
-      if (!context.userId) {
+      if (!userId) {
         return [];
       }
 
-      const players: PlayerWithRelations[] = await context.prisma.player.findMany({
+      const players = await db.player.findMany({
         where: {
-          claimedById: context.userId,
+          claimedById: userId,
         },
         include: {
           skills: true,
@@ -67,41 +59,8 @@ export const queries: Resolvers['Query'] = {
         },
       });
 
-      // Convert database players to GraphQL format
-      // Note: This manually constructs Player objects from DB data
-      // The structure should match the GraphQL Player type
-      return players.map((player) => ({
-        id: player.id,
-        username: player.username,
-        displayName: player.displayName || player.username,
-        accountType: player.accountType,
-        totalLevel: player.totalLevel,
-        totalXp: player.totalXp,
-        combatLevel: player.combatLevel,
-        skills: {
-          overall: {
-            level: player.totalLevel,
-            xp: player.totalXp,
-            rank: 0, // Not stored in DB
-          },
-          skills: player.skills.reduce((acc, skill) => {
-            acc[skill.name] = {
-              level: skill.level,
-              xp: skill.xp,
-              rank: skill.rank,
-            };
-            return acc;
-          }, {} as Record<string, { level: number; xp: bigint; rank: number }>),
-        },
-        bosses: player.bossKCs.map((boss) => ({
-          bossName: boss.bossName,
-          killCount: boss.kc,
-          rank: boss.rank,
-        })),
-        lastUpdated: player.updatedAt,
-        claimedBy: player.claimedById || undefined,
-        claimedAt: player.updatedAt,
-      })) as any; // Type assertion needed due to manual construction from DB
+      // Return Prisma players directly - field resolvers will handle transformation
+      return players;
     }
 
     // For unclaimed or all players, we'd need to fetch from OSRS API
@@ -110,18 +69,14 @@ export const queries: Resolvers['Query'] = {
     return [];
   },
 
-  dashboard: async (
-    _,
-    __,
-    context
-  ) => {
-    if (!context.userId) {
+  dashboard: async (_, __, {userId}) => {
+    if (!userId) {
       throw new Error('Unauthorized');
     }
 
-    const players: PlayerWithRelations[] = await context.prisma.player.findMany({
+    const players = await db.player.findMany({
       where: {
-        claimedById: context.userId,
+        claimedById: userId,
       },
       include: {
         skills: true,
@@ -172,11 +127,7 @@ export const queries: Resolvers['Query'] = {
     };
   },
 
-  milestones: async (
-    _,
-    { username },
-    __
-  ) => {
+  milestones: async (_, { username }) => {
     const result = await lookupPlayer(username);
 
     if (!result.success || !result.player) {
@@ -206,11 +157,7 @@ export const queries: Resolvers['Query'] = {
     };
   },
 
-  history: async (
-    _,
-    { username, period },
-    __
-  ) => {
+  history: async (_, { username, period }) => {
     const periodValue = (period || 'all') as 'day' | 'week' | 'month' | 'year' | 'all' | 'custom';
 
     const [skillsHistory, totalHistory] = await Promise.all([
