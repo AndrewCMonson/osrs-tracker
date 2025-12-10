@@ -9,7 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-1 md:col-span-2">
-            <Logo showText size="md" className="mb-4" />
+            <Logo showText size="md" alwaysShowText className="mb-4" />
             <p className="text-sm text-stone-500 max-w-md">
               Track your Old School RuneScape progress, milestones, and achievements. 
               Claim your account and unlock detailed insights.

@@ -4,6 +4,7 @@ interface LogoProps {
   showText?: boolean;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  alwaysShowText?: boolean;
 }
 
 const sizeMap: Record<'sm' | 'md' | 'lg', { icon: number; text: string }> = {
@@ -12,8 +13,10 @@ const sizeMap: Record<'sm' | 'md' | 'lg', { icon: number; text: string }> = {
   lg: { icon: 40, text: 'text-xl' },
 };
 
-export function Logo({ showText = false, size = 'md', className = '' }: LogoProps) {
+export function Logo({ showText = false, size = 'md', className = '', alwaysShowText = false }: LogoProps) {
   const { icon, text } = sizeMap[size] ?? sizeMap.md;
+
+  const textVisibilityClass = alwaysShowText ? 'inline-block' : 'hidden lg:inline-block';
 
   return (
     <Link href="/" className={`flex items-center gap-2 group flex-shrink-0 ${className}`}>
@@ -28,7 +31,7 @@ export function Logo({ showText = false, size = 'md', className = '' }: LogoProp
         />
       </div>
       {showText && (
-        <span className={`${text} font-bold text-stone-100 hidden lg:inline-block`}>
+        <span className={`${text} font-bold text-stone-100 ${textVisibilityClass}`}>
           OSRS<span className="text-amber-500">Tracker</span>
         </span>
       )}
