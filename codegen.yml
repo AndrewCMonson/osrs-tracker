@@ -1,0 +1,13 @@
+schema: './app/api/graphql/schema.ts'
+documents: null
+generates:
+  ./app/api/graphql/generated/types.ts:
+    plugins:
+      - typescript
+      - typescript-resolvers
+    config:
+      useIndexSignature: true
+      contextType: '../context#GraphQLContext'
+      mappers:
+        Player: '@/types/player#Player'
+        Milestone: '@/types/milestones#Milestone'
