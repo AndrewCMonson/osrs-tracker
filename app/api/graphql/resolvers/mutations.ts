@@ -2,10 +2,11 @@
  * GraphQL Mutation Resolvers
  */
 
+import { db } from '@/lib/db';
 import { normalizeUsername } from '@/lib/utils';
 import { lookupPlayer } from '@/services/player';
+import { savePlayerSnapshot } from '@/services/snapshot';
 import { Resolvers } from '../generated/types';
-import { db } from '@/lib/db';
 
 export const mutations: Resolvers['Mutation'] = {
   refreshPlayer: async (_, { username }) => {
@@ -128,7 +129,7 @@ export const mutations: Resolvers['Mutation'] = {
     }
   },
 
-  updatePlayerDisplayName: async (_, { username, displayName }, {userId}) => {
+  updatePlayerDisplayName: async (_, { username, displayName }, { userId }) => {
     if (!userId) {
       return {
         success: false,
@@ -190,6 +191,81 @@ export const mutations: Resolvers['Mutation'] = {
         success: false,
         player: null,
         error: error instanceof Error ? error.message : 'Failed to update display name',
+      };
+    }
+  },
+
+  createSnapshot: async (_, { username }) => {
+    try {
+      // Fetch fresh player data from OSRS API
+      const result = await lookupPlayer(username);
+
+      if (!result.success || !result.player) {
+        return {
+          success: false,
+          snapshot: null,
+          error: result.error || 'Failed to fetch player data',
+        };
+      }
+
+      // Save the snapshot
+      await savePlayerSnapshot(result.player, true);
+
+      // Get the latest snapshot from the database
+      const normalizedUsername = normalizeUsername(username);
+      const dbPlayer = await db.player.findUnique({
+        where: { username: normalizedUsername },
+        select: { id: true },
+      });
+
+      if (!dbPlayer) {
+        return {
+          success: true,
+          snapshot: null,
+          error: null,
+        };
+      }
+
+      const snapshot = await db.playerSnapshot.findFirst({
+        where: { playerId: dbPlayer.id },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          skills: true,
+          bosses: true,
+        },
+      });
+
+      return {
+        success: true,
+        snapshot: snapshot
+          ? {
+            id: snapshot.id,
+            playerId: snapshot.playerId,
+            totalLevel: snapshot.totalLevel,
+            totalXp: snapshot.totalXp,
+            combatLevel: snapshot.combatLevel,
+            createdAt: snapshot.createdAt,
+            skills: snapshot.skills.map((s) => ({
+              name: s.name,
+              level: s.level,
+              xp: s.xp,
+              rank: s.rank,
+            })),
+            bosses: snapshot.bosses.map((b) => ({
+              bossName: b.bossName,
+              kc: b.kc,
+              rank: b.rank,
+            })),
+          }
+          : null,
+        error: null,
+      };
+    } catch (error) {
+      console.error('Error creating snapshot:', error);
+      return {
+        success: false,
+        snapshot: null,
+        error: error instanceof Error ? error.message : 'Failed to create snapshot',
       };
     }
   },

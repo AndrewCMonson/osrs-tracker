@@ -115,6 +115,7 @@ export type MilestonesResponse = {
 export type Mutation = {
   __typename?: 'Mutation';
   claimPlayer?: Maybe<ClaimPlayerResponse>;
+  createSnapshot?: Maybe<SnapshotResponse>;
   refreshPlayer?: Maybe<PlayerResponse>;
   updatePlayerDisplayName?: Maybe<PlayerResponse>;
 };
@@ -122,6 +123,11 @@ export type Mutation = {
 
 export type MutationClaimPlayerArgs = {
   token: Scalars['String']['input'];
+  username: Scalars['String']['input'];
+};
+
+
+export type MutationCreateSnapshotArgs = {
   username: Scalars['String']['input'];
 };
 
@@ -134,6 +140,14 @@ export type MutationRefreshPlayerArgs = {
 export type MutationUpdatePlayerDisplayNameArgs = {
   displayName: Scalars['String']['input'];
   username: Scalars['String']['input'];
+};
+
+export type NameChange = {
+  __typename?: 'NameChange';
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['String']['output'];
+  newUsername: Scalars['String']['output'];
+  oldUsername: Scalars['String']['output'];
 };
 
 export type Player = {
@@ -182,6 +196,7 @@ export type Query = {
   dashboard?: Maybe<Dashboard>;
   history?: Maybe<HistoryResponse>;
   milestones?: Maybe<MilestonesResponse>;
+  nameChangeHistory: Array<NameChange>;
   player?: Maybe<Player>;
   players: Array<Player>;
 };
@@ -194,6 +209,11 @@ export type QueryHistoryArgs = {
 
 
 export type QueryMilestonesArgs = {
+  username: Scalars['String']['input'];
+};
+
+
+export type QueryNameChangeHistoryArgs = {
   username: Scalars['String']['input'];
 };
 
@@ -294,6 +314,13 @@ export type Snapshot = {
   skills: Array<SkillSnapshot>;
   totalLevel: Scalars['Int']['output'];
   totalXp: Scalars['BigInt']['output'];
+};
+
+export type SnapshotResponse = {
+  __typename?: 'SnapshotResponse';
+  error?: Maybe<Scalars['String']['output']>;
+  snapshot?: Maybe<Snapshot>;
+  success: Scalars['Boolean']['output'];
 };
 
 export type Subscription = {
@@ -409,6 +436,7 @@ export type ResolversTypes = ResolversObject<{
   MilestoneStats: ResolverTypeWrapper<MilestoneStats>;
   MilestonesResponse: ResolverTypeWrapper<Omit<MilestonesResponse, 'achieved' | 'inProgress' | 'nearest99s'> & { achieved: Array<ResolversTypes['Milestone']>, inProgress: Array<ResolversTypes['Milestone']>, nearest99s: Array<ResolversTypes['Milestone']> }>;
   Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
+  NameChange: ResolverTypeWrapper<NameChange>;
   Player: ResolverTypeWrapper<PlayerModel>;
   PlayerAccount: ResolverTypeWrapper<PlayerAccount>;
   PlayerResponse: ResolverTypeWrapper<Omit<PlayerResponse, 'player'> & { player?: Maybe<ResolversTypes['Player']> }>;
@@ -420,6 +448,7 @@ export type ResolversTypes = ResolversObject<{
   SkillSnapshot: ResolverTypeWrapper<SkillSnapshotModel>;
   SkillXpMap: ResolverTypeWrapper<SkillXpMap>;
   Snapshot: ResolverTypeWrapper<SnapshotModel>;
+  SnapshotResponse: ResolverTypeWrapper<Omit<SnapshotResponse, 'snapshot'> & { snapshot?: Maybe<ResolversTypes['Snapshot']> }>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Subscription: ResolverTypeWrapper<Record<PropertyKey, never>>;
   TotalHistoryPoint: ResolverTypeWrapper<TotalHistoryPoint>;
@@ -443,6 +472,7 @@ export type ResolversParentTypes = ResolversObject<{
   MilestoneStats: MilestoneStats;
   MilestonesResponse: Omit<MilestonesResponse, 'achieved' | 'inProgress' | 'nearest99s'> & { achieved: Array<ResolversParentTypes['Milestone']>, inProgress: Array<ResolversParentTypes['Milestone']>, nearest99s: Array<ResolversParentTypes['Milestone']> };
   Mutation: Record<PropertyKey, never>;
+  NameChange: NameChange;
   Player: PlayerModel;
   PlayerAccount: PlayerAccount;
   PlayerResponse: Omit<PlayerResponse, 'player'> & { player?: Maybe<ResolversParentTypes['Player']> };
@@ -454,6 +484,7 @@ export type ResolversParentTypes = ResolversObject<{
   SkillSnapshot: SkillSnapshotModel;
   SkillXpMap: SkillXpMap;
   Snapshot: SnapshotModel;
+  SnapshotResponse: Omit<SnapshotResponse, 'snapshot'> & { snapshot?: Maybe<ResolversParentTypes['Snapshot']> };
   String: Scalars['String']['output'];
   Subscription: Record<PropertyKey, never>;
   TotalHistoryPoint: TotalHistoryPoint;
@@ -548,8 +579,16 @@ export type MilestonesResponseResolvers<ContextType = GraphQLContext, ParentType
 
 export type MutationResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = ResolversObject<{
   claimPlayer?: Resolver<Maybe<ResolversTypes['ClaimPlayerResponse']>, ParentType, ContextType, RequireFields<MutationClaimPlayerArgs, 'token' | 'username'>>;
+  createSnapshot?: Resolver<Maybe<ResolversTypes['SnapshotResponse']>, ParentType, ContextType, RequireFields<MutationCreateSnapshotArgs, 'username'>>;
   refreshPlayer?: Resolver<Maybe<ResolversTypes['PlayerResponse']>, ParentType, ContextType, RequireFields<MutationRefreshPlayerArgs, 'username'>>;
   updatePlayerDisplayName?: Resolver<Maybe<ResolversTypes['PlayerResponse']>, ParentType, ContextType, RequireFields<MutationUpdatePlayerDisplayNameArgs, 'displayName' | 'username'>>;
+}>;
+
+export type NameChangeResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['NameChange'] = ResolversParentTypes['NameChange']> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  newUsername?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  oldUsername?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
 export type PlayerResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Player'] = ResolversParentTypes['Player']> = ResolversObject<{
@@ -593,6 +632,7 @@ export type QueryResolvers<ContextType = GraphQLContext, ParentType extends Reso
   dashboard?: Resolver<Maybe<ResolversTypes['Dashboard']>, ParentType, ContextType>;
   history?: Resolver<Maybe<ResolversTypes['HistoryResponse']>, ParentType, ContextType, RequireFields<QueryHistoryArgs, 'username'>>;
   milestones?: Resolver<Maybe<ResolversTypes['MilestonesResponse']>, ParentType, ContextType, RequireFields<QueryMilestonesArgs, 'username'>>;
+  nameChangeHistory?: Resolver<Array<ResolversTypes['NameChange']>, ParentType, ContextType, RequireFields<QueryNameChangeHistoryArgs, 'username'>>;
   player?: Resolver<Maybe<ResolversTypes['Player']>, ParentType, ContextType, RequireFields<QueryPlayerArgs, 'username'>>;
   players?: Resolver<Array<ResolversTypes['Player']>, ParentType, ContextType, Partial<QueryPlayersArgs>>;
 }>;
@@ -680,6 +720,12 @@ export type SnapshotResolvers<ContextType = GraphQLContext, ParentType extends R
   totalXp?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
 }>;
 
+export type SnapshotResponseResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['SnapshotResponse'] = ResolversParentTypes['SnapshotResponse']> = ResolversObject<{
+  error?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  snapshot?: Resolver<Maybe<ResolversTypes['Snapshot']>, ParentType, ContextType>;
+  success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+}>;
+
 export type SubscriptionResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']> = ResolversObject<{
   playerUpdated?: SubscriptionResolver<Maybe<ResolversTypes['Player']>, "playerUpdated", ParentType, ContextType, RequireFields<SubscriptionPlayerUpdatedArgs, 'username'>>;
   snapshotCreated?: SubscriptionResolver<Maybe<ResolversTypes['Snapshot']>, "snapshotCreated", ParentType, ContextType, RequireFields<SubscriptionSnapshotCreatedArgs, 'username'>>;
@@ -705,6 +751,7 @@ export type Resolvers<ContextType = GraphQLContext> = ResolversObject<{
   MilestoneStats?: MilestoneStatsResolvers<ContextType>;
   MilestonesResponse?: MilestonesResponseResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
+  NameChange?: NameChangeResolvers<ContextType>;
   Player?: PlayerResolvers<ContextType>;
   PlayerAccount?: PlayerAccountResolvers<ContextType>;
   PlayerResponse?: PlayerResponseResolvers<ContextType>;
@@ -716,6 +763,7 @@ export type Resolvers<ContextType = GraphQLContext> = ResolversObject<{
   SkillSnapshot?: SkillSnapshotResolvers<ContextType>;
   SkillXpMap?: SkillXpMapResolvers<ContextType>;
   Snapshot?: SnapshotResolvers<ContextType>;
+  SnapshotResponse?: SnapshotResponseResolvers<ContextType>;
   Subscription?: SubscriptionResolvers<ContextType>;
   TotalHistoryPoint?: TotalHistoryPointResolvers<ContextType>;
 }>;

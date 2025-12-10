@@ -1,15 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { History, ArrowRight } from 'lucide-react';
+import { GET_NAME_CHANGE_HISTORY, graphqlRequest } from '@/lib/graphql';
 import { formatRelativeTime } from '@/lib/utils';
+import { ArrowRight, History } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface NameChange {
   id: string;
   oldUsername: string;
   newUsername: string;
   createdAt: string;
+}
+
+interface NameChangeHistoryResponse {
+  nameChangeHistory: NameChange[];
 }
 
 interface NameChangeHistoryProps {
@@ -23,13 +28,11 @@ export function NameChangeHistory({ username }: NameChangeHistoryProps) {
   useEffect(() => {
     const fetchNameChanges = async () => {
       try {
-        const response = await fetch(
-          `/api/players/${encodeURIComponent(username)}/name-change/history`
+        const result = await graphqlRequest<NameChangeHistoryResponse>(
+          GET_NAME_CHANGE_HISTORY,
+          { username }
         );
-        if (response.ok) {
-          const data = await response.json();
-          setNameChanges(data.nameChanges || []);
-        }
+        setNameChanges(result.nameChangeHistory || []);
       } catch (error) {
         console.error('Error fetching name change history:', error);
       } finally {

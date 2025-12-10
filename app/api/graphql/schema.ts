@@ -20,12 +20,27 @@ export const schema = createSchema<GraphQLContext>({
       dashboard: Dashboard
       milestones(username: String!): MilestonesResponse
       history(username: String!, period: String): HistoryResponse
+      nameChangeHistory(username: String!): [NameChange!]!
+    }
+
+    type NameChange {
+      id: String!
+      oldUsername: String!
+      newUsername: String!
+      createdAt: DateTime!
     }
 
     type Mutation {
       refreshPlayer(username: String!): PlayerResponse
       claimPlayer(username: String!, token: String!): ClaimPlayerResponse
       updatePlayerDisplayName(username: String!, displayName: String!): PlayerResponse
+      createSnapshot(username: String!): SnapshotResponse
+    }
+
+    type SnapshotResponse {
+      success: Boolean!
+      snapshot: Snapshot
+      error: String
     }
 
     type Subscription {

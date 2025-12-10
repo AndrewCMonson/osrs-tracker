@@ -2,12 +2,13 @@
  * GraphQL Query Resolvers
  */
 
+import { db } from '@/lib/db';
 import { normalizeUsername } from '@/lib/utils';
 import { calculatePlayerMilestones, getNearest99s } from '@/services/milestone';
+import { getNameChangeHistory, getPlayerIdByUsername } from '@/services/name-change';
 import { lookupPlayer } from '@/services/player';
 import { getAllSkillsHistory, getTotalXpHistory } from '@/services/snapshot';
 import { Resolvers } from '../generated/types';
-import { db } from '@/lib/db';
 
 export const queries: Resolvers['Query'] = {
   player: async (_, { username }) => {
@@ -39,7 +40,7 @@ export const queries: Resolvers['Query'] = {
     return result.player;
   },
 
-  players: async (_, { claimed }, {userId}) => {
+  players: async (_, { claimed }, { userId }) => {
     if (claimed === true) {
       // Return only claimed players for the authenticated user
       if (!userId) {
@@ -69,7 +70,7 @@ export const queries: Resolvers['Query'] = {
     return [];
   },
 
-  dashboard: async (_, __, {userId}) => {
+  dashboard: async (_, __, { userId }) => {
     if (!userId) {
       throw new Error('Unauthorized');
     }
@@ -181,6 +182,23 @@ export const queries: Resolvers['Query'] = {
         totalLevel: th.totalLevel,
       })),
     };
+  },
+
+  nameChangeHistory: async (_, { username }) => {
+    const playerId = await getPlayerIdByUsername(normalizeUsername(username));
+
+    if (!playerId) {
+      return [];
+    }
+
+    const nameChanges = await getNameChangeHistory(playerId);
+
+    return nameChanges.map((nc) => ({
+      id: nc.id,
+      oldUsername: nc.oldUsername,
+      newUsername: nc.newUsername,
+      createdAt: nc.createdAt,
+    }));
   },
 };
 

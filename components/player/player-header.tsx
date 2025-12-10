@@ -1,15 +1,16 @@
 'use client';
 
-import Image from 'next/image';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { Player, ACCOUNT_TYPE_DISPLAY } from '@/types/player';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatRelativeTime, formatUsername } from '@/lib/utils';
+import { CREATE_SNAPSHOT, graphqlRequest } from '@/lib/graphql';
 import { getAccountTypeIcon } from '@/lib/images';
-import { RefreshCw, Shield, UserCheck, Swords, Save } from 'lucide-react';
+import { formatRelativeTime, formatUsername } from '@/lib/utils';
+import { ACCOUNT_TYPE_DISPLAY, Player } from '@/types/player';
+import { RefreshCw, Save, Shield, Swords, UserCheck } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { NameChangeForm } from './name-change-form';
 import { VerificationModal } from './verification-modal';
 
@@ -46,20 +47,25 @@ export function PlayerHeader({ player, onRefresh, isRefreshing }: PlayerHeaderPr
     setSnapshotMessage(null);
 
     try {
-      const response = await fetch(`/api/players/${encodeURIComponent(player.username)}/snapshot`, {
-        method: 'POST',
+      interface CreateSnapshotResponse {
+        createSnapshot: {
+          success: boolean;
+          error: string | null;
+        };
+      }
+
+      const result = await graphqlRequest<CreateSnapshotResponse>(CREATE_SNAPSHOT, {
+        username: player.username,
       });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (result.createSnapshot.success) {
         setSnapshotMessage('Snapshot saved successfully!');
         // Refresh the page to show updated data
         setTimeout(() => {
           router.refresh();
         }, 1000);
       } else {
-        setSnapshotMessage(data.error || 'Failed to save snapshot');
+        setSnapshotMessage(result.createSnapshot.error || 'Failed to save snapshot');
       }
     } catch (error) {
       console.error('Error saving snapshot:', error);

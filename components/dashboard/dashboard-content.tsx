@@ -1,17 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatXp, formatXpShort, SKILLS, SkillName } from '@/types/skills';
-import { ACCOUNT_TYPE_DISPLAY, AccountType } from '@/types/player';
-import { getAccountTypeIcon } from '@/lib/images';
+import { GET_DASHBOARD, graphqlRequest } from '@/lib/graphql';
+import { getAccountTypeIcon, getSkillIcon } from '@/lib/images';
 import { formatRelativeTime } from '@/lib/utils';
-import { Swords, TrendingUp, Users, Zap, Shield } from 'lucide-react';
-import { getSkillIcon } from '@/lib/images';
+import { ACCOUNT_TYPE_DISPLAY, AccountType } from '@/types/player';
+import { formatXp, formatXpShort, SKILLS } from '@/types/skills';
+import { Shield, Swords, TrendingUp, Users } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 interface Account {
   id: string;
@@ -19,19 +19,23 @@ interface Account {
   displayName: string;
   accountType: AccountType;
   totalLevel: number;
-  totalXp: number;
+  totalXp: string; // BigInt serialized as string from GraphQL
   combatLevel: number;
-  lastUpdated: string; // ISO string from API
+  lastUpdated: string;
 }
 
 interface DashboardData {
   accounts: Account[];
   totals: {
-    totalXp: number;
+    totalXp: string; // BigInt serialized as string
     totalLevels: number;
     accountCount: number;
-    skillXp: Record<string, number>;
+    skillXp: Record<string, string>; // BigInt values as strings
   };
+}
+
+interface DashboardResponse {
+  dashboard: DashboardData;
 }
 
 export function DashboardContent() {
@@ -42,17 +46,10 @@ export function DashboardContent() {
   useEffect(() => {
     async function fetchDashboardData() {
       try {
-        const response = await fetch('/api/dashboard');
-        if (!response.ok) {
-          throw new Error('Failed to fetch dashboard data');
-        }
-        const result = await response.json();
-        if (result.success) {
-          setData(result);
-        } else {
-          setError(result.error || 'Failed to load dashboard');
-        }
+        const result = await graphqlRequest<DashboardResponse>(GET_DASHBOARD);
+        setData(result.dashboard);
       } catch (err) {
+        console.error('GraphQL error:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
@@ -116,11 +113,14 @@ export function DashboardContent() {
     );
   }
 
-  // Sort skills by total XP (descending)
+  // Sort skills by total XP (descending) - convert BigInt strings to numbers
   const sortedSkills = SKILLS.map(skill => ({
     name: skill,
-    xp: data.totals.skillXp[skill] || 0,
+    xp: Number(data.totals.skillXp[skill] || 0),
   })).sort((a, b) => b.xp - a.xp);
+
+  // Convert BigInt strings to numbers for display
+  const totalXp = Number(data.totals.totalXp);
 
   return (
     <div className="space-y-6">
@@ -135,12 +135,12 @@ export function DashboardContent() {
               <div className="flex-1">
                 <p className="text-sm text-stone-400">Total XP</p>
                 <p className="text-2xl font-bold text-stone-100">
-                  {formatXpShort(data.totals.totalXp)}
+                  {formatXpShort(totalXp)}
                 </p>
               </div>
             </div>
             <p className="text-xs text-stone-500 mt-2">
-              {formatXp(data.totals.totalXp)} XP across all accounts
+              {formatXp(totalXp)} XP across all accounts
             </p>
           </CardContent>
         </Card>
@@ -254,7 +254,7 @@ export function DashboardContent() {
                           </span>
                           <span className="flex items-center gap-1">
                             <TrendingUp className="h-4 w-4" />
-                            {formatXpShort(account.totalXp)} XP
+                            {formatXpShort(Number(account.totalXp))} XP
                           </span>
                           <span className="flex items-center gap-1">
                             <Swords className="h-4 w-4" />

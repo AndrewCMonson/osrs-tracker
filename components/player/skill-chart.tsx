@@ -1,22 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from 'recharts';
-import { SKILLS, SkillName, formatXpShort } from '@/types/skills';
+import { GET_HISTORY, graphqlRequest } from '@/lib/graphql';
 import { getSkillIcon } from '@/lib/images';
 import { cn } from '@/lib/utils';
-import { TrendingUp, Calendar, Loader2 } from 'lucide-react';
+import { SKILLS, SkillName, formatXpShort } from '@/types/skills';
+import { Calendar, Loader2, TrendingUp } from 'lucide-react';
 import Image from 'next/image';
-import { TimePeriodSelector, TimePeriod } from './time-period-selector';
+import { useEffect, useState } from 'react';
+import {
+    CartesianGrid,
+    Legend,
+    Line,
+    LineChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts';
+import { TimePeriod, TimePeriodSelector } from './time-period-selector';
 
 const SKILL_DISPLAY_NAMES: Record<SkillName, string> = {
   attack: 'Attack',
@@ -72,20 +73,29 @@ const SKILL_COLORS: Record<SkillName, string> = {
   sailing: '#0284c7',
 };
 
+interface SkillDataPoint {
+  date: string;
+  level: number;
+  xp: string; // BigInt as string from GraphQL
+  rank: number;
+}
+
 interface SkillHistoryData {
   skill: SkillName;
-  dataPoints: {
-    date: string;
-    level: number;
-    xp: number;
-    rank: number;
-  }[];
+  dataPoints: SkillDataPoint[];
 }
 
 interface TotalHistoryData {
   date: string;
-  totalXp: number;
+  totalXp: string; // BigInt as string from GraphQL
   totalLevel: number;
+}
+
+interface HistoryResponse {
+  history: {
+    skills: SkillHistoryData[];
+    total: TotalHistoryData[];
+  };
 }
 
 interface SkillChartProps {
@@ -109,42 +119,36 @@ export function SkillChart({ username }: SkillChartProps) {
       setError(null);
 
       try {
-        const params = new URLSearchParams({
+        // For custom dates, we'd need to extend the GraphQL schema
+        // For now, just use period
+        const result = await graphqlRequest<HistoryResponse>(GET_HISTORY, {
+          username,
           period: timePeriod,
         });
-        if (timePeriod === 'custom' && customStartDate && customEndDate) {
-          params.append('start', customStartDate.toISOString());
-          params.append('end', customEndDate.toISOString());
-        }
-        
-        const response = await fetch(`/api/players/${encodeURIComponent(username)}/history?${params}`);
-        const data = await response.json();
 
-        if (data.success) {
-          const skills = data.data.skills || [];
-          const total = data.data.total || [];
-          setSkillsHistory(skills);
-          setTotalHistory(total);
-          
-          // If no skills are selected or selected skills have no data, auto-select skills with data
-          if (skills.length > 0) {
-            const skillsWithData = skills
-              .filter((s: SkillHistoryData) => s.dataPoints.length > 0)
-              .map((s: SkillHistoryData) => s.skill)
-              .slice(0, 3); // Select first 3 skills with data
-            
-            if (skillsWithData.length > 0) {
-              // Only update if current selection has no data
-              const currentHasData = selectedSkills.some(skill => 
-                skills.find((s: SkillHistoryData) => s.skill === skill && s.dataPoints.length > 0)
-              );
-              if (!currentHasData) {
-                setSelectedSkills(skillsWithData);
-              }
+        const skills = result.history.skills || [];
+        const total = result.history.total || [];
+        setSkillsHistory(skills);
+        setTotalHistory(total);
+
+        // If no skills are selected or selected skills have no data, auto-select skills with data
+        if (skills.length > 0) {
+          const skillsWithData = skills
+            .filter((s: SkillHistoryData) => s.dataPoints.length > 0)
+            .map((s: SkillHistoryData) => s.skill)
+            .slice(0, 3); // Select first 3 skills with data
+
+          if (skillsWithData.length > 0) {
+            // Only update if current selection has no data
+            const currentHasData = selectedSkills.some((skill) =>
+              skills.find(
+                (s: SkillHistoryData) => s.skill === skill && s.dataPoints.length > 0
+              )
+            );
+            if (!currentHasData) {
+              setSelectedSkills(skillsWithData);
             }
           }
-        } else {
-          setError(data.error || 'Failed to load history');
         }
       } catch (err) {
         setError('Failed to load history');
@@ -174,7 +178,7 @@ export function SkillChart({ username }: SkillChartProps) {
           day: 'numeric',
         }),
         fullDate: point.date,
-        'Total XP': point.totalXp,
+        'Total XP': Number(point.totalXp), // Convert BigInt string to number
         'Total Level': point.totalLevel,
       }));
     }
@@ -197,7 +201,7 @@ export function SkillChart({ username }: SkillChartProps) {
 
     // Build chart data
     return sortedDates.map((date) => {
-      const point: Record<string, string | number> = {
+      const point: Record<string, string | number | null> = {
         date: new Date(date).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
@@ -214,7 +218,7 @@ export function SkillChart({ username }: SkillChartProps) {
         });
         point[SKILL_DISPLAY_NAMES[skill]] = dp
           ? chartType === 'xp'
-            ? dp.xp
+            ? Number(dp.xp) // Convert BigInt string to number
             : dp.level
           : null; // Use null instead of 0 for missing data points
       });
