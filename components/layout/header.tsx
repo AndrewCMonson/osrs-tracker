@@ -1,14 +1,15 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Sword, LogIn, Menu, X, Search, Loader2, Sun, Moon, User, LogOut } from 'lucide-react';
-import { normalizeUsername } from '@/lib/utils';
+import { Logo } from '@/components/layout/logo';
+import { useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useTheme } from '@/components/theme-provider';
-import { useSession, signOut } from 'next-auth/react';
-import { useState, FormEvent, useEffect, useRef } from 'react';
+import { normalizeUsername } from '@/lib/utils';
+import { Loader2, LogIn, LogOut, Menu, Moon, Search, Sun, User, X } from 'lucide-react';
+import { signOut, useSession } from 'next-auth/react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 
 export function Header() {
   const router = useRouter();
@@ -60,14 +61,7 @@ export function Header() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 shadow-lg shadow-amber-900/30 group-hover:shadow-amber-900/50 transition-shadow">
-              <Sword className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-lg font-bold text-stone-100 hidden lg:block">
-              OSRS<span className="text-amber-500">Tracker</span>
-            </span>
-          </Link>
+          <Logo showText size="lg" />
 
           {/* Desktop Search Bar */}
           <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-4">

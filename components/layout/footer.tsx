@@ -1,5 +1,6 @@
+import { Logo } from '@/components/layout/logo';
+import { Github, Twitter } from 'lucide-react';
 import Link from 'next/link';
-import { Sword, Github, Twitter } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -8,14 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-1 md:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-amber-700">
-                <Sword className="h-4 w-4 text-white" />
-              </div>
-              <span className="text-lg font-bold text-stone-100">
-                OSRS<span className="text-amber-500">Tracker</span>
-              </span>
-            </Link>
+            <Logo showText size="md" alwaysShowText className="mb-4" />
             <p className="text-sm text-stone-500 max-w-md">
               Track your Old School RuneScape progress, milestones, and achievements. 
               Claim your account and unlock detailed insights.

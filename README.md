@@ -47,9 +47,49 @@ osrs-tracker/
 └── types/                  # TypeScript type definitions
 ```
 
+## Development Workflow
+
+This project follows a simplified GitHub Flow branching strategy:
+
+1. Create a feature branch from `main` using the naming convention: `feature/your-feature-name`
+2. Make commits following [Conventional Commits](https://www.conventionalcommits.org/) format
+3. Push your branch and create a Pull Request
+4. After code review and approval, merge to `main`
+
+### Branch Naming Examples
+
+- `feature/user-dashboard` - New features
+- `bugfix/skill-chart-rendering` - Bug fixes
+- `refactor/api-error-handling` - Code refactoring
+- `docs/api-documentation` - Documentation updates
+- `chore/update-dependencies` - Maintenance tasks
+
+### Commit Message Format
+
+Follow the Conventional Commits specification:
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**Examples:**
+- `feat(api): add GraphQL endpoint for player queries`
+- `fix(components): resolve skill chart rendering issue`
+- `docs(readme): update development workflow section`
+
 ## Contributing
 
 Contributions are welcome! This project is open source and we encourage the community to help improve it. Whether it's bug fixes, new features, or documentation improvements, your contributions make this project better for everyone.
+
+Before contributing, please read our [Contributing Guidelines](CONTRIBUTING.md) which includes:
+- Detailed Git branching and commit conventions
+- Pull request guidelines
+- Code review process
+- Best practices for development
 
 Please feel free to:
 - Report bugs
