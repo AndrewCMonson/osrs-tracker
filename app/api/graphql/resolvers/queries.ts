@@ -7,15 +7,15 @@ import { calculatePlayerMilestones, getNearest99s } from '@/services/milestone';
 import { lookupPlayer } from '@/services/player';
 import { getAllSkillsHistory, getTotalXpHistory } from '@/services/snapshot';
 import { PlayerWithRelations } from '@/types/prisma';
-import { GraphQLContext } from '../context';
+import { Resolvers } from '../generated/types';
 
-export const queries = {
+export const queries: Resolvers['Query'] = {
   player: async (
-    _parent: unknown,
-    args: { username: string },
-    context: GraphQLContext
+    _,
+    { username },
+    context
   ) => {
-    const result = await lookupPlayer(args.username);
+    const result = await lookupPlayer(username);
 
     if (!result.success || !result.player) {
       return null;
@@ -23,8 +23,8 @@ export const queries = {
 
     // Check if player is claimed
     try {
-      const dbPlayer = await (context.prisma as any).player.findUnique({
-        where: { username: normalizeUsername(args.username) },
+      const dbPlayer = await context.prisma.player.findUnique({
+        where: { username: normalizeUsername(username) },
         select: { claimedById: true, updatedAt: true },
       });
 
@@ -44,17 +44,17 @@ export const queries = {
   },
 
   players: async (
-    _parent: unknown,
-    args: { claimed?: boolean },
-    context: GraphQLContext
+    _,
+    { claimed },
+    context
   ) => {
-    if (args.claimed === true) {
+    if (claimed === true) {
       // Return only claimed players for the authenticated user
       if (!context.userId) {
         return [];
       }
 
-      const players: PlayerWithRelations[] = await (context.prisma as any).player.findMany({
+      const players: PlayerWithRelations[] = await context.prisma.player.findMany({
         where: {
           claimedById: context.userId,
         },
@@ -68,6 +68,8 @@ export const queries = {
       });
 
       // Convert database players to GraphQL format
+      // Note: This manually constructs Player objects from DB data
+      // The structure should match the GraphQL Player type
       return players.map((player) => ({
         id: player.id,
         username: player.username,
@@ -99,7 +101,7 @@ export const queries = {
         lastUpdated: player.updatedAt,
         claimedBy: player.claimedById || undefined,
         claimedAt: player.updatedAt,
-      }));
+      })) as any; // Type assertion needed due to manual construction from DB
     }
 
     // For unclaimed or all players, we'd need to fetch from OSRS API
@@ -109,15 +111,15 @@ export const queries = {
   },
 
   dashboard: async (
-    _parent: unknown,
-    _args: unknown,
-    context: GraphQLContext
+    _,
+    __,
+    context
   ) => {
     if (!context.userId) {
       throw new Error('Unauthorized');
     }
 
-    const players: PlayerWithRelations[] = await (context.prisma as any).player.findMany({
+    const players: PlayerWithRelations[] = await context.prisma.player.findMany({
       where: {
         claimedById: context.userId,
       },
@@ -171,11 +173,11 @@ export const queries = {
   },
 
   milestones: async (
-    _parent: unknown,
-    args: { username: string },
-    _context: GraphQLContext
+    _,
+    { username },
+    __
   ) => {
-    const result = await lookupPlayer(args.username);
+    const result = await lookupPlayer(username);
 
     if (!result.success || !result.player) {
       throw new Error(result.error || 'Player not found');
@@ -205,15 +207,15 @@ export const queries = {
   },
 
   history: async (
-    _parent: unknown,
-    args: { username: string; period?: string },
-    _context: GraphQLContext
+    _,
+    { username, period },
+    __
   ) => {
-    const period = (args.period || 'all') as 'day' | 'week' | 'month' | 'year' | 'all' | 'custom';
+    const periodValue = (period || 'all') as 'day' | 'week' | 'month' | 'year' | 'all' | 'custom';
 
     const [skillsHistory, totalHistory] = await Promise.all([
-      getAllSkillsHistory(args.username, period),
-      getTotalXpHistory(args.username, period),
+      getAllSkillsHistory(username, periodValue),
+      getTotalXpHistory(username, periodValue),
     ]);
 
     return {
@@ -234,3 +236,4 @@ export const queries = {
     };
   },
 };
+

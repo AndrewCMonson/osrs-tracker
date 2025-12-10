@@ -11,3 +11,4 @@ generates:
       mappers:
         Player: '@/types/player#Player'
         Milestone: '@/types/milestones#Milestone'
+

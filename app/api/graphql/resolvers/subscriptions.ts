@@ -4,7 +4,8 @@
 
 import { normalizeUsername } from '@/lib/utils';
 import { lookupPlayer } from '@/services/player';
-import { GraphQLContext } from '../context';
+import type { GraphQLContext } from '../context';
+import type { SubscriptionPlayerUpdatedArgs, SubscriptionSnapshotCreatedArgs } from '../generated/types';
 
 // Simple in-memory pubsub for subscriptions
 // In production, you'd want to use Redis or another pub/sub system
@@ -20,11 +21,11 @@ export function publish(event: string, data: any) {
 export const subscriptions = {
   playerUpdated: {
     subscribe: async function* (
-      _parent: unknown,
-      args: { username: string },
-      _context: GraphQLContext
+      _: unknown,
+      { username }: SubscriptionPlayerUpdatedArgs,
+      __: GraphQLContext
     ) {
-      const normalizedUsername = normalizeUsername(args.username);
+      const normalizedUsername = normalizeUsername(username);
       const eventKey = `player:${normalizedUsername}`;
 
       // Create a queue for this subscription
@@ -48,7 +49,7 @@ export const subscriptions = {
 
       try {
         // Send initial player data
-        const result = await lookupPlayer(args.username);
+        const result = await lookupPlayer(username);
         if (result.success && result.player) {
           yield { playerUpdated: result.player };
         }
@@ -77,11 +78,11 @@ export const subscriptions = {
 
   snapshotCreated: {
     subscribe: async function* (
-      _parent: unknown,
-      args: { username: string },
+      _: unknown,
+      { username }: SubscriptionSnapshotCreatedArgs,
       context: GraphQLContext
     ) {
-      const normalizedUsername = normalizeUsername(args.username);
+      const normalizedUsername = normalizeUsername(username);
       const eventKey = `snapshot:${normalizedUsername}`;
 
       const queue: any[] = [];
@@ -163,3 +164,4 @@ export const subscriptions = {
     },
   },
 };
+

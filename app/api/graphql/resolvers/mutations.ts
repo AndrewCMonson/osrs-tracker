@@ -4,15 +4,15 @@
 
 import { normalizeUsername } from '@/lib/utils';
 import { lookupPlayer } from '@/services/player';
-import { GraphQLContext } from '../context';
+import { Resolvers } from '../generated/types';
 
-export const mutations = {
+export const mutations: Resolvers["Mutation"] = {
   refreshPlayer: async (
-    _parent: unknown,
-    args: { username: string },
-    _context: GraphQLContext
+    _,
+    { username },
+    __
   ) => {
-    const result = await lookupPlayer(args.username);
+    const result = await lookupPlayer(username);
 
     if (!result.success || !result.player) {
       return {
@@ -30,9 +30,9 @@ export const mutations = {
   },
 
   claimPlayer: async (
-    _parent: unknown,
-    args: { username: string; token: string },
-    context: GraphQLContext
+    _,
+    { username, token },
+    context
   ) => {
     if (!context.userId) {
       return {
@@ -44,8 +44,8 @@ export const mutations = {
 
     try {
       // Verify the token
-      const verification = await (context.prisma as any).claimVerification.findUnique({
-        where: { token: args.token },
+      const verification = await context.prisma.claimVerification.findUnique({
+        where: { token },
         include: { user: true },
       });
 
@@ -73,16 +73,16 @@ export const mutations = {
         };
       }
 
-      const normalizedUsername = normalizeUsername(args.username);
+      const normalizedUsername = normalizeUsername(username);
 
       // Check if player exists, create if not
-      let player = await (context.prisma as any).player.findUnique({
+      let player = await context.prisma.player.findUnique({
         where: { username: normalizedUsername },
       });
 
       if (!player) {
         // Player doesn't exist in DB yet, fetch from OSRS API first
-        const lookupResult = await lookupPlayer(args.username);
+        const lookupResult = await lookupPlayer(username);
         if (!lookupResult.success || !lookupResult.player) {
           return {
             success: false,
@@ -122,7 +122,7 @@ export const mutations = {
 
       return {
         success: true,
-        message: `Successfully claimed player ${args.username}`,
+        message: `Successfully claimed player ${username}`,
         error: null,
       };
     } catch (error) {
@@ -136,9 +136,9 @@ export const mutations = {
   },
 
   updatePlayerDisplayName: async (
-    _parent: unknown,
-    args: { username: string; displayName: string },
-    context: GraphQLContext
+    _,
+    { username, displayName },
+    context
   ) => {
     if (!context.userId) {
       return {
@@ -149,7 +149,7 @@ export const mutations = {
     }
 
     try {
-      const normalizedUsername = normalizeUsername(args.username);
+      const normalizedUsername = normalizeUsername(username);
 
       const player = await context.prisma.player.findUnique({
         where: { username: normalizedUsername },
@@ -173,17 +173,17 @@ export const mutations = {
 
       const updatedPlayer = await context.prisma.player.update({
         where: { id: player.id },
-        data: { displayName: args.displayName },
+        data: { displayName },
       });
 
       // Fetch full player data
-      const result = await lookupPlayer(args.username);
+      const result = await lookupPlayer(username);
       if (result.success && result.player) {
         return {
           success: true,
           player: {
             ...result.player,
-            displayName: args.displayName,
+            displayName,
             claimedBy: context.userId,
           },
           error: null,
@@ -205,3 +205,4 @@ export const mutations = {
     }
   },
 };
+
