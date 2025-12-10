@@ -99,7 +99,7 @@ export function groupMilestones(milestones: Milestone[]): MilestoneGroup[] {
     if (!groups.has(groupId)) {
       groups.set(groupId, {
         id: groupId,
-        type: milestone.type as any,
+        type: milestone.type as MilestoneGroup['type'],
         name: groupName,
         icon,
         currentValue,

@@ -61,27 +61,6 @@ export interface PlayerProfile extends Player {
   nearestGoals: Milestone[];
 }
 
-export interface ClaimVerification {
-  id: string;
-  userId: string;
-  username: string;
-  token: string;
-  status: 'pending' | 'verified' | 'expired' | 'failed';
-  createdAt: Date;
-  expiresAt: Date;
-  verifiedAt?: Date;
-}
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  image?: string;
-  claimedAccounts: string[]; // Player usernames
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 // API Response types
 export interface PlayerSearchResult {
   username: string;

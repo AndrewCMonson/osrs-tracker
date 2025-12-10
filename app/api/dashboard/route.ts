@@ -1,14 +1,8 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { Prisma } from '@prisma/client';
+import { PlayerWithRelations } from '@/types/prisma';
+import { PrismaClient } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
-
-type PlayerWithRelations = Prisma.PlayerGetPayload<{
-  include: {
-    skills: true;
-    bossKCs: true;
-  };
-}>;
 
 /**
  * Get all claimed accounts for the authenticated user
@@ -25,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all players claimed by this user
-    const players: PlayerWithRelations[] = await prisma.player.findMany({
+    const players: PlayerWithRelations[] = await (prisma as PrismaClient).player.findMany({
       where: {
         claimedById: session.user.id,
       },

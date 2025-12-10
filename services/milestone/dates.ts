@@ -3,7 +3,15 @@
  */
 
 import { db } from '@/lib/db';
-import { Milestone, MilestoneType } from '@/types/milestones';
+import { 
+  Milestone, 
+  MilestoneType,
+  Skill99Milestone,
+  BaseLevelMilestone,
+  TotalLevelMilestone,
+  CombatLevelMilestone,
+  BossKcMilestone
+} from '@/types/milestones';
 import { SkillName } from '@/types/skills';
 import { BossName } from '@/types/bosses';
 
@@ -38,32 +46,32 @@ export async function getMilestoneAchievementDate(
 
       switch (milestone.type) {
         case 'skill_99': {
-          const skillMilestone = milestone as any;
+          const skillMilestone = milestone as Skill99Milestone;
           const skillData = snapshot.skills.find((s) => s.name === skillMilestone.skill);
-          isAchieved = skillData && skillData.level >= 99;
+          isAchieved = skillData !== undefined && skillData.level >= 99;
           break;
         }
         case 'base_level': {
-          const baseMilestone = milestone as any;
+          const baseMilestone = milestone as BaseLevelMilestone;
           const allSkills = snapshot.skills;
           const lowestLevel = Math.min(...allSkills.map((s) => s.level));
           isAchieved = lowestLevel >= baseMilestone.targetLevel;
           break;
         }
         case 'total_level': {
-          const totalMilestone = milestone as any;
+          const totalMilestone = milestone as TotalLevelMilestone;
           isAchieved = snapshot.totalLevel >= totalMilestone.targetLevel;
           break;
         }
         case 'combat_level': {
-          const combatMilestone = milestone as any;
+          const combatMilestone = milestone as CombatLevelMilestone;
           isAchieved = snapshot.combatLevel >= combatMilestone.targetLevel;
           break;
         }
         case 'boss_kc': {
-          const bossMilestone = milestone as any;
+          const bossMilestone = milestone as BossKcMilestone;
           const bossData = snapshot.bosses.find((b) => b.bossName === bossMilestone.boss);
-          isAchieved = bossData && bossData.kc >= bossMilestone.targetKc;
+          isAchieved = bossData !== undefined && bossData.kc >= bossMilestone.targetKc;
           break;
         }
         case 'max_cape': {

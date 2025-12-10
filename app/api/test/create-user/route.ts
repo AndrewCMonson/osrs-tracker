@@ -68,15 +68,18 @@ export async function POST(request: NextRequest) {
         },
         warning: '⚠️ Please change the password after first login!',
       });
-    } catch (createError: any) {
+    } catch (createError: unknown) {
+      const errorMessage = createError instanceof Error ? createError.message : 'Unknown error';
+      throw new Error(`Failed to create user: ${errorMessage}`);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating test user:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to create test user',
-        details: error.message,
+        details: errorMessage,
         hint: 'Make sure your database is set up and Prisma schema matches your code',
       },
       { status: 500 }

@@ -10,6 +10,7 @@ import { db } from '@/lib/db';
 import { Player } from '@/types/player';
 import { SKILLS, SkillName } from '@/types/skills';
 import { BOSSES, BossName } from '@/types/bosses';
+import { PlayerSnapshotWhereInput } from '@/types/prisma';
 
 /**
  * Check if database is available
@@ -335,7 +336,7 @@ export async function getAllSkillsHistory(
     }
 
     const { start, end } = getDateRange(period, customStart, customEnd);
-    const whereClause: any = { playerId: player.id };
+    const whereClause: PlayerSnapshotWhereInput = { playerId: player.id };
     
     if (start || end) {
       whereClause.createdAt = {};
@@ -402,7 +403,7 @@ export async function getTotalXpHistory(
     }
 
     const { start, end } = getDateRange(period, customStart, customEnd);
-    const whereClause: any = { playerId: player.id };
+    const whereClause: PlayerSnapshotWhereInput = { playerId: player.id };
     
     if (start || end) {
       whereClause.createdAt = {};

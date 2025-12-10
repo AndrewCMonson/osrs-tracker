@@ -25,7 +25,7 @@ function createMockDb() {
   };
 
   // Create a proxy that returns mockModel for any property access
-  return new Proxy({} as any, {
+  return new Proxy({} as Record<string, unknown>, {
     get: () => mockModel,
   });
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getNameChangeHistory, getPlayerIdByUsername } from '@/services/name-change';
+import { PlayerNameChange } from '@/types/prisma';
 
 export async function GET(
   request: NextRequest,
@@ -24,7 +25,7 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      nameChanges: nameChanges.map((change) => ({
+      nameChanges: nameChanges.map((change: PlayerNameChange) => ({
         id: change.id,
         oldUsername: change.oldUsername,
         newUsername: change.newUsername,
